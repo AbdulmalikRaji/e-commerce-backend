@@ -15,6 +15,7 @@ type User struct {
 	Products  []Product `gorm:"foreignKey:SellerID"`
 	Orders    []Order   `gorm:"foreignKey:BuyerID"`
 	Addresses []Address `gorm:"foreignKey:UserID"`
+	Reviews   []Review  `gorm:"foreignKey:UserID"`
 }
 
 func (User) TableName() string {

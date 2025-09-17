@@ -4,6 +4,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/abdulmalikraji/e-commerce/db/models"
 	"gorm.io/gorm"
 )
 
@@ -15,7 +16,16 @@ func Migrate(connection *gorm.DB) {
 
 		log.Println("Migrating the database...")
 
-		if err := connection.AutoMigrate(); err != nil {
+		if err := connection.AutoMigrate(
+			&models.User{},
+			&models.ProductCategory{},
+			&models.Product{},
+			&models.Order{},
+			&models.OrderItem{},
+			&models.Payment{},
+			&models.Address{},
+			&models.Review{},
+		); err != nil {
 			log.Fatalf("Could not migrate: %v", err)
 		}
 
