@@ -10,6 +10,7 @@ type Order struct {
 	TotalAmount       float64   `gorm:"type:numeric(10,2);default:0" json:"total_amount"`
 	CreatedAt         time.Time `gorm:"default:now()" json:"created_at"`
 	UpdatedAt         time.Time `gorm:"default:now()" json:"updated_at"`
+	DelFlg            bool      `gorm:"default:false" json:"del_flg"`
 
 	// Relations
 	Buyer           User        `gorm:"foreignKey:BuyerID"`

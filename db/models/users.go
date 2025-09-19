@@ -10,6 +10,7 @@ type User struct {
 	Role      string    `gorm:"type:varchar(20);not null" json:"role"` // buyer, seller, admin
 	CreatedAt time.Time `gorm:"default:now()" json:"created_at"`
 	UpdatedAt time.Time `gorm:"default:now()" json:"updated_at"`
+	DelFlg        bool    `gorm:"default:false" json:"del_flg"`
 
 	// Relations
 	Products  []Product `gorm:"foreignKey:SellerID"`

@@ -10,6 +10,7 @@ type OrderItem struct {
 	UnitPrice float64   `gorm:"type:numeric(10,2);not null" json:"unit_price"`
 	ReviewID  *string   `gorm:"type:uuid;unique" json:"review_id"`
 	CreatedAt time.Time `gorm:"default:now()" json:"created_at"`
+	DelFlg    bool      `gorm:"default:false" json:"del_flg"`
 
 	// Relations
 	Order   Order   `gorm:"foreignKey:OrderID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`

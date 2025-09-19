@@ -10,6 +10,7 @@ type Payment struct {
 	Status         string    `gorm:"type:varchar(20);not null" json:"status"` // initiated, successful, failed
 	TransactionRef string    `gorm:"unique;not null" json:"transaction_ref"`
 	CreatedAt      time.Time `gorm:"default:now()" json:"created_at"`
+	DelFlg         bool      `gorm:"default:false" json:"del_flg"`
 
 	// Relations
 	Order Order `gorm:"foreignKey:OrderID"`

@@ -14,6 +14,7 @@ type Address struct {
 	IsDefault  bool      `gorm:"default:false" json:"is_default"`
 	CreatedAt  time.Time `gorm:"default:now()" json:"created_at"`
 	UpdatedAt  time.Time `gorm:"default:now()" json:"updated_at"`
+	DelFlg     bool      `gorm:"default:false" json:"del_flg"`
 
 	// Relations
 	User User `gorm:"foreignKey:UserID"`

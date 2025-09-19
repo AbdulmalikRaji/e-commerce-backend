@@ -8,6 +8,7 @@ type ProductCategory struct {
 	Description string    `gorm:"type:varchar(255)" json:"description"`
 	CreatedAt   time.Time `gorm:"default:now()" json:"created_at"`
 	UpdatedAt   time.Time `gorm:"default:now()" json:"updated_at"`
+	DelFlg      bool      `gorm:"default:false" json:"del_flg"`
 
 	// Relations
 	Products []Product `gorm:"foreignKey:CategoryID"`
