@@ -18,7 +18,7 @@ func Migrate(connection *gorm.DB) {
 
 		if err := connection.AutoMigrate(
 			&models.User{},
-			&models.ProductCategory{},
+			&models.Category{},
 			&models.Product{},
 			&models.Order{},
 			&models.OrderItem{},
