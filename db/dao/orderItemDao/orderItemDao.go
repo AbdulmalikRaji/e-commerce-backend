@@ -10,7 +10,7 @@ type DataAccess interface {
 	FindAll() ([]models.OrderItem, error)
 	FindById(id string) (models.OrderItem, error)
 	FindByOrderId(orderId string) ([]models.OrderItem, error)
-	FindByOrderItemReview(id string) (models.OrderItem, error)
+	FindOrderItemReview(id string) (models.OrderItem, error)
 	Insert(item models.OrderItem) (models.OrderItem, error)
 	Update(item models.OrderItem) error
 	SoftDelete(id string) error
@@ -63,7 +63,7 @@ func (d dataAccess) FindByOrderId(orderId string) ([]models.OrderItem, error) {
 	return items, nil
 }
 
-func (d dataAccess) FindByOrderItemReview(id string) (models.OrderItem, error) {
+func (d dataAccess) FindOrderItemReview(id string) (models.OrderItem, error) {
 	var item models.OrderItem
 	result := d.db.Table(models.OrderItem{}.TableName()).
 		Where("id = ? AND del_flg = ?", id, false).

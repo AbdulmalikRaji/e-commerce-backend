@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type ProductSubcategory struct {
+type Subcategory struct {
 	ID            uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
 	ProductID     uuid.UUID `gorm:"type:uuid;index;not null" json:"product_id"`
 	SubcategoryID uuid.UUID `gorm:"type:uuid;index;not null" json:"subcategory_id"`
@@ -17,6 +17,6 @@ type ProductSubcategory struct {
 	Subcategory Category `gorm:"foreignKey:SubcategoryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"subcategory,omitempty"`
 }
 
-func (ProductSubcategory) TableName() string {
+func (Subcategory) TableName() string {
 	return "public.product_subcategories"
 }

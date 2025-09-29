@@ -18,9 +18,10 @@ type OrderItem struct {
 	DelFlg    bool       `gorm:"default:false" json:"del_flg"`
 
 	// Relations
-	Order   Order   `gorm:"foreignKey:OrderID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"order,omitempty"`
-	Product Product `gorm:"foreignKey:ProductID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"product,omitempty"`
-	Review  *Review `gorm:"foreignKey:ReviewID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	Order   Order           `gorm:"foreignKey:OrderID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"order,omitempty"`
+	Product Product         `gorm:"foreignKey:ProductID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"product,omitempty"`
+	Review  *Review         `gorm:"foreignKey:ReviewID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	Variant *ProductVariant `gorm:"foreignKey:VariantID;references:ID" json:"variant,omitempty"`
 	// Review relation is optional and modeled in Review struct (Review.OrderItemID -> OrderItem.ID) if desired
 }
 
