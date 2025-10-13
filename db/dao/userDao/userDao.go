@@ -14,6 +14,8 @@ type DataAccess interface {
 	FindUserOrders(id string) (models.User, error)
 	FindUserReviews(id string) (models.User, error)
 	FindUserAddresses(id string) (models.User, error)
+	FindUserNotifications(id string) (models.User, error)
+	FindUserCart(id string) (models.User, error)
 	Insert(item models.User) (models.User, error)
 	Update(item models.User) error
 	SoftDelete(id string) error
@@ -98,6 +100,32 @@ func (d dataAccess) FindUserAddresses(id string) (models.User, error) {
 	result := d.db.Table(models.User{}.TableName()).
 		Where("id = ? AND del_flg = ?", id, false).
 		Preload("Addresses").
+		First(&user)
+	if result.Error != nil {
+		return models.User{}, result.Error
+	}
+	return user, nil
+}
+
+func (d dataAccess) FindUserNotifications(id string) (models.User, error) {
+
+	var user models.User
+	result := d.db.Table(models.User{}.TableName()).
+		Where("id = ? AND del_flg = ?", id, false).
+		Preload("Notifications").
+		First(&user)
+	if result.Error != nil {
+		return models.User{}, result.Error
+	}
+	return user, nil
+}
+
+func (d dataAccess) FindUserCart(id string) (models.User, error) {
+
+	var user models.User
+	result := d.db.Table(models.User{}.TableName()).
+		Where("id = ? AND del_flg = ?", id, false).
+		Preload("Cart").
 		First(&user)
 	if result.Error != nil {
 		return models.User{}, result.Error

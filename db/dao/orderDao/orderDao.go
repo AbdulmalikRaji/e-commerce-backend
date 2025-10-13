@@ -3,6 +3,7 @@ package orderDao
 import (
 	"github.com/abdulmalikraji/e-commerce/db/connection"
 	"github.com/abdulmalikraji/e-commerce/db/models"
+	"github.com/abdulmalikraji/e-commerce/dto"
 	"gorm.io/gorm"
 )
 
@@ -12,6 +13,7 @@ type DataAccess interface {
 	FindById(id string) (models.Order, error)
 	FindByBuyerId(userId string) ([]models.Order, error)
 	FindOrderItems(id string) (models.Order, error)
+	FindWithFilters(filter dto.OrderFilter) ([]models.Order, error)
 	Insert(item models.Order) (models.Order, error)
 	Update(item models.Order) error
 	SoftDelete(id string) error
@@ -78,6 +80,30 @@ func (d dataAccess) FindOrderItems(id string) (models.Order, error) {
 		return models.Order{}, result.Error
 	}
 	return order, nil
+}
+
+func (d dataAccess) FindWithFilters(filter dto.OrderFilter) ([]models.Order, error) {
+	var orders []models.Order
+	query := d.db.Table(models.Order{}.TableName()).Where("del_flg = ?", false)
+	if filter.Status != nil {
+		query = query.Where("status = ?", *filter.Status)
+	}
+	if filter.DateFrom != nil {
+		query = query.Where("created_at >= ?", *filter.DateFrom)
+	}
+	if filter.DateTo != nil {
+		query = query.Where("created_at <= ?", *filter.DateTo)
+	}
+	if filter.PaymentStatus != nil {
+		query = query.Joins("JOIN payments ON payments.order_id = orders.id").
+			Where("payments.status = ?", *filter.PaymentStatus)
+	}
+	query = query.Preload("Payments").Preload("Buyer").Order("created_at DESC")
+	result := query.Find(&orders)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return orders, nil
 }
 
 func (d dataAccess) Insert(item models.Order) (models.Order, error) {
