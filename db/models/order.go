@@ -12,7 +12,7 @@ type Order struct {
 	ShippingAddressID *uuid.UUID `gorm:"type:uuid;index" json:"shipping_address_id"`
 	Status            string     `gorm:"type:varchar(20);not null;default:'pending'" json:"status"` // pending | paid | shipped | delivered | cancelled
 	TotalAmount       float64    `gorm:"type:numeric(10,2)" json:"total_amount"`
-	CouponID          *uuid.UUID `gorm:"type:uuid;index" json:"coupon_id,omitempty"`   // nullable, FK to Coupon
+	CouponID          *uuid.UUID `gorm:"type:uuid;index" json:"coupon_id,omitempty"` // nullable, FK to Coupon
 	Discount          float64    `gorm:"type:numeric(10,2);default:0" json:"discount"`
 	CreatedAt         time.Time  `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt         time.Time  `gorm:"autoUpdateTime" json:"updated_at"`

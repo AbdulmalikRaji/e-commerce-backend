@@ -25,6 +25,7 @@ func Migrate(connection *gorm.DB) {
 			&models.Payment{},
 			&models.Address{},
 			&models.Review{},
+			&models.Store{},
 		); err != nil {
 			log.Fatalf("Could not migrate: %v", err)
 		}

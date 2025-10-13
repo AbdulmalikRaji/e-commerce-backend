@@ -8,7 +8,7 @@ import (
 
 type Product struct {
 	ID            uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	SellerID      uuid.UUID `gorm:"type:uuid;index;not null" json:"seller_id"`
+	StoreID       uuid.UUID `gorm:"type:uuid;index;not null" json:"store_id"`
 	CategoryID    uuid.UUID `gorm:"type:uuid;index;not null" json:"category_id"` // main category
 	Name          string    `gorm:"type:varchar(100);not null" json:"name"`
 	Description   string    `gorm:"type:text" json:"description"`
@@ -26,7 +26,7 @@ type Product struct {
 	DelFlg        bool      `gorm:"default:false" json:"del_flg"`
 
 	// Relations
-	Seller         User             `gorm:"foreignKey:SellerID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"seller,omitempty"`
+	Store          Store            `gorm:"foreignKey:StoreID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"store,omitempty"`
 	Category       Category         `gorm:"foreignKey:CategoryID;references:ID" json:"category,omitempty"`
 	Images         []ProductImage   `gorm:"foreignKey:ProductID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"images,omitempty"`
 	Variants       []ProductVariant `gorm:"foreignKey:ProductID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"variants,omitempty"`

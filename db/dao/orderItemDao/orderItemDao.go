@@ -44,6 +44,9 @@ func (d dataAccess) FindById(id string) (models.OrderItem, error) {
 	result := d.db.Table(models.OrderItem{}.TableName()).
 		Where("id = ? AND del_flg = ?", id, false).
 		Preload("Product").
+		Preload("Variant").
+		Preload("Review").
+		Preload("Store").
 		First(&item)
 	if result.Error != nil {
 		return models.OrderItem{}, result.Error
@@ -56,6 +59,9 @@ func (d dataAccess) FindByOrderId(orderId string) ([]models.OrderItem, error) {
 	result := d.db.Table(models.OrderItem{}.TableName()).
 		Where("order_id = ? AND del_flg = ?", orderId, false).
 		Preload("Product").
+		Preload("Variant").
+		Preload("Review").
+		Preload("Store").
 		Find(&items)
 	if result.Error != nil {
 		return []models.OrderItem{}, result.Error
@@ -68,7 +74,9 @@ func (d dataAccess) FindOrderItemReview(id string) (models.OrderItem, error) {
 	result := d.db.Table(models.OrderItem{}.TableName()).
 		Where("id = ? AND del_flg = ?", id, false).
 		Preload("Product").
+		Preload("Variant").
 		Preload("Review").
+		Preload("Store").
 		First(&item)
 	if result.Error != nil {
 		return models.OrderItem{}, result.Error

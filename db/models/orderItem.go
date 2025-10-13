@@ -9,6 +9,7 @@ import (
 type OrderItem struct {
 	ID        uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
 	OrderID   uuid.UUID  `gorm:"type:uuid;index;not null" json:"order_id"`
+	StoreID   uuid.UUID  `gorm:"type:uuid;index;not null" json:"store_id"`
 	ProductID uuid.UUID  `gorm:"type:uuid;index;not null" json:"product_id"`
 	VariantID *uuid.UUID `gorm:"type:uuid;index" json:"variant_id"`
 	Quantity  int        `gorm:"not null" json:"quantity"`
@@ -22,7 +23,7 @@ type OrderItem struct {
 	Product Product         `gorm:"foreignKey:ProductID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"product,omitempty"`
 	Review  *Review         `gorm:"foreignKey:ReviewID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	Variant *ProductVariant `gorm:"foreignKey:VariantID;references:ID" json:"variant,omitempty"`
-	// Review relation is optional and modeled in Review struct (Review.OrderItemID -> OrderItem.ID) if desired
+	Store   Store           `gorm:"foreignKey:StoreID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"store,omitempty"`
 }
 
 func (OrderItem) TableName() string {

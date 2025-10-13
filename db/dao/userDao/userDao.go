@@ -11,7 +11,6 @@ type DataAccess interface {
 	FindAll() ([]models.User, error)
 	FindById(id string) (models.User, error)
 	FindByName(name string) (models.User, error)
-	FindUserProducts(id string) (models.User, error)
 	FindUserOrders(id string) (models.User, error)
 	FindUserReviews(id string) (models.User, error)
 	FindUserAddresses(id string) (models.User, error)
@@ -60,19 +59,6 @@ func (d dataAccess) FindByName(name string) (models.User, error) {
 	var user models.User
 	result := d.db.Table(models.User{}.TableName()).
 		Where("name = ? AND del_flg = ?", name, false).
-		First(&user)
-	if result.Error != nil {
-		return models.User{}, result.Error
-	}
-	return user, nil
-}
-
-func (d dataAccess) FindUserProducts(id string) (models.User, error) {
-
-	var user models.User
-	result := d.db.Table(models.User{}.TableName()).
-		Where("id = ? AND del_flg = ?", id, false).
-		Preload("Products").
 		First(&user)
 	if result.Error != nil {
 		return models.User{}, result.Error

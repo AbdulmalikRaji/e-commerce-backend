@@ -11,8 +11,9 @@ type DataAccess interface {
 	// Postgres Data Access Object Methods
 	FindAll() ([]models.Product, error)
 	FindById(id string) (models.Product, error)
+	FindByStoreId(storeId string) ([]models.Product, error)
 	FindPopular() ([]models.Product, error)
-	FindPopularBySellerId(sellerId string) ([]models.Product, error)
+	FindPopularByStoreId(storeId string) ([]models.Product, error)
 	FindByCategoryId(categoryId string) ([]models.Product, error)
 	FindByName(name string) (models.Product, error)
 	FindProductReviews(id string) (models.Product, error)
@@ -37,6 +38,23 @@ func (d dataAccess) FindAll() ([]models.Product, error) {
 	var products []models.Product
 	result := d.db.Table(models.Product{}.TableName()).
 		Where("del_flg = ?", false).
+		Preload("Category").
+		Preload("Images").
+		Preload("Variants").
+		Preload("WarehouseStock").
+		Preload("Tags").
+		Preload("SubCategories").
+		Find(&products)
+	if result.Error != nil {
+		return []models.Product{}, result.Error
+	}
+	return products, nil
+}
+
+func (d dataAccess) FindByStoreId(storeId string) ([]models.Product, error) {
+	var products []models.Product
+	result := d.db.Table(models.Product{}.TableName()).
+		Where("store_id = ? AND del_flg = ?", storeId, true, false).
 		Preload("Category").
 		Preload("Images").
 		Preload("Variants").
@@ -86,10 +104,10 @@ func (d dataAccess) FindPopular() ([]models.Product, error) {
 	return products, nil
 }
 
-func (d dataAccess) FindPopularBySellerId(sellerId string) ([]models.Product, error) {
+func (d dataAccess) FindPopularByStoreId(storeId string) ([]models.Product, error) {
 	var products []models.Product
 	result := d.db.Table(models.Product{}.TableName()).
-		Where("seller_id = ? AND is_popular = ? AND del_flg = ?", sellerId, true, false).
+		Where("store_id = ? AND is_popular = ? AND del_flg = ?", storeId, true, false).
 		Preload("Category").
 		Preload("Images").
 		Preload("Variants").
