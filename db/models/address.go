@@ -25,5 +25,5 @@ type Address struct {
 }
 
 func (Address) TableName() string {
-	return "public.addresses"
+	return "ecom.addresses"
 }

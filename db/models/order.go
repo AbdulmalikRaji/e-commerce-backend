@@ -27,5 +27,5 @@ type Order struct {
 }
 
 func (Order) TableName() string {
-	return "public.orders"
+	return "ecom.orders"
 }

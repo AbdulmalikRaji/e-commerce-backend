@@ -14,6 +14,8 @@ type Category struct {
 	DelFlg      bool       `gorm:"default:false" json:"del_flg"`
 	CreatedAt   time.Time  `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
+	CreatedBy   *uuid.UUID `gorm:"type:uuid;index" json:"created_by,omitempty"`
+	UpdatedBy   *uuid.UUID `gorm:"type:uuid;index" json:"updated_by,omitempty"`
 
 	// Relations
 	Parent      *Category  `gorm:"foreignKey:ParentID;references:ID" json:"parent,omitempty"`
@@ -23,5 +25,5 @@ type Category struct {
 }
 
 func (Category) TableName() string {
-	return "public.categories"
+	return "ecom.categories"
 }

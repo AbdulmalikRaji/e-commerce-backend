@@ -10,6 +10,8 @@ type Subcategory struct {
 	ID            uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
 	ProductID     uuid.UUID `gorm:"type:uuid;index;not null" json:"product_id"`
 	SubcategoryID uuid.UUID `gorm:"type:uuid;index;not null" json:"subcategory_id"`
+	CreatedBy *uuid.UUID `gorm:"type:uuid;index" json:"created_by,omitempty"`
+	UpdatedBy *uuid.UUID `gorm:"type:uuid;index" json:"updated_by,omitempty"`
 	CreatedAt     time.Time `gorm:"autoCreateTime" json:"created_at"`
 
 	// Relations
@@ -18,5 +20,5 @@ type Subcategory struct {
 }
 
 func (Subcategory) TableName() string {
-	return "public.product_subcategories"
+	return "ecom.subcategories"
 }

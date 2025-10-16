@@ -23,5 +23,5 @@ type Payment struct {
 }
 
 func (Payment) TableName() string {
-	return "public.payments"
+	return "ecom.payments"
 }

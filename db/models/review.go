@@ -24,5 +24,5 @@ type Review struct {
 }
 
 func (Review) TableName() string {
-	return "public.reviews"
+	return "ecom.reviews"
 }

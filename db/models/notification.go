@@ -12,6 +12,8 @@ type Notification struct {
 	Type      string    `gorm:"type:varchar(50)" json:"type"` // order_update | payment_update | system_message
 	Message   string    `gorm:"type:text" json:"message"`
 	IsRead    bool      `gorm:"default:false" json:"is_read"`
+	CreatedBy *uuid.UUID `gorm:"type:uuid;index" json:"created_by,omitempty"`
+	UpdatedBy *uuid.UUID `gorm:"type:uuid;index" json:"updated_by,omitempty"`
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 
 	// Relations
@@ -19,5 +21,5 @@ type Notification struct {
 }
 
 func (Notification) TableName() string {
-	return "public.notifications"
+	return "ecom.notifications"
 }

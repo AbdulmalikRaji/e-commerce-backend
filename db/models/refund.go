@@ -20,5 +20,5 @@ type Refund struct {
 }
 
 func (Refund) TableName() string {
-	return "public.refunds"
+	return "ecom.refunds"
 }

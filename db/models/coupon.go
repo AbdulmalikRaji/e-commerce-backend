@@ -15,6 +15,8 @@ type Coupon struct {
 	UsedCount      int        `gorm:"default:0" json:"used_count"`
 	ValidFrom      *time.Time `json:"valid_from"`
 	ValidUntil     *time.Time `json:"valid_until"`
+	CreatedBy *uuid.UUID `gorm:"type:uuid;index" json:"created_by,omitempty"`
+	UpdatedBy *uuid.UUID `gorm:"type:uuid;index" json:"updated_by,omitempty"`
 	CreatedAt      time.Time  `gorm:"autoCreateTime" json:"created_at"`
 	DelFlg         bool       `gorm:"default:false" json:"del_flg"`
 
@@ -22,5 +24,5 @@ type Coupon struct {
 }
 
 func (Coupon) TableName() string {
-	return "public.coupons"
+	return "ecom.coupons"
 }

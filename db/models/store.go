@@ -20,5 +20,5 @@ type Store struct {
 }
 
 func (Store) TableName() string {
-	return "public.stores"
+	return "ecom.stores"
 }

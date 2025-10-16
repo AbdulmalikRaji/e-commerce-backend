@@ -18,5 +18,5 @@ type ProductImage struct {
 }
 
 func (ProductImage) TableName() string {
-	return "public.product_images"
+	return "ecom.product_images"
 }
