@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/abdulmalikraji/e-commerce/authenticator"
+	"github.com/abdulmalikraji/e-commerce/config"
 	"github.com/abdulmalikraji/e-commerce/db/connection"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -23,7 +25,12 @@ func main() {
 
 	app := fiber.New()
 
-	// config.InitializeRoutes(app, client)
+	auth, err := authenticator.New()
+	if err != nil {
+		log.Fatalf("Failed to initialize the authenticator: %v", err)
+	}
+
+	config.InitializeRoutes(app, client, auth)
 
 	// Start the server in a goroutine
 	go func() {
