@@ -9,7 +9,7 @@ import (
 )
 
 type AuthService interface {
-	LoginByEmail(ctx *fiber.Ctx, loginRequest authDto.LoginByEmailRequest) (string, error)
+	LoginByEmail(ctx *fiber.Ctx, loginRequest authDto.LoginByEmailRequest) (authDto.LoginByEmailResponse, int, error)
 	ValidateToken(ctx *fiber.Ctx, token string) (bool, error)
 	RefreshToken(ctx *fiber.Ctx, oldToken string) (string, error)
 }
@@ -26,7 +26,7 @@ func NewAuthService(userDao userDao.DataAccess, authClient auth.Client) AuthServ
 	}
 }
 
-func (s authService) LoginByEmail(ctx *fiber.Ctx, loginRequest authDto.LoginByEmailRequest) (string, error) {
+func (s authService) LoginByEmail(ctx *fiber.Ctx, loginRequest authDto.LoginByEmailRequest) (authDto.LoginByEmailResponse, int, error) {
 	resp, err := s.authClient.Token(types.TokenRequest{
 		GrantType: "password",
 		Email:     loginRequest.Email,
@@ -34,16 +34,30 @@ func (s authService) LoginByEmail(ctx *fiber.Ctx, loginRequest authDto.LoginByEm
 	})
 
 	if err != nil {
-		return "", err
+		return authDto.LoginByEmailResponse{}, fiber.StatusUnauthorized, err
 	}
-	return resp.AccessToken, nil
+
+	return authDto.LoginByEmailResponse{
+		AccessToken:  resp.AccessToken,
+		RefreshToken: resp.RefreshToken,
+		ExpiresAt:    resp.ExpiresAt,
+	}, fiber.StatusOK, nil
 }
 
 func (s authService) ValidateToken(ctx *fiber.Ctx, token string) (bool, error) {
+	_, err := s.authClient.WithToken(token).GetUser()
+	if err != nil {
+		return false, err
+	}
+
 	return true, nil
 }
 
 func (s authService) RefreshToken(ctx *fiber.Ctx, oldToken string) (string, error) {
+	resp, err := s.authClient.RefreshToken(oldToken)
+	if err != nil {
+		return "", err
+	}
 
-	return "", nil
+	return resp.AccessToken, nil
 }

@@ -28,12 +28,12 @@ func (c authHandler) LoginByEmail(ctx *fiber.Ctx) error {
 		return genericResponse.ErrorResponse(ctx, fiber.StatusBadRequest, err.Error())
 	}
 
-	token, err := c.service.LoginByEmail(ctx, loginRequest)
+	token, status, err := c.service.LoginByEmail(ctx, loginRequest)
 	if err != nil {
 		return genericResponse.ErrorResponse(ctx, fiber.StatusUnauthorized, err.Error())
 	}
 
-	return genericResponse.SuccessResponse(ctx, token, fiber.StatusOK)
+	return genericResponse.SuccessResponse(ctx, status, token, "Login successful")
 }
 
 func (c authHandler) SignUp(ctx *fiber.Ctx) error {

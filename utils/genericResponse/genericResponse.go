@@ -8,7 +8,7 @@ type GenericResponse struct {
 	Data    interface{} `json:"data"`
 }
 
-func SuccessResponse(ctx *fiber.Ctx, data interface{}, status int, msg ...string) error {
+func SuccessResponse(ctx *fiber.Ctx, status int, data interface{}, msg ...string) error {
 	if len(msg) == 0 {
 		msg = append(msg, "Success")
 	}
