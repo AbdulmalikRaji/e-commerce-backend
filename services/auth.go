@@ -10,7 +10,6 @@ import (
 
 type AuthService interface {
 	LoginByEmail(ctx *fiber.Ctx, loginRequest authDto.LoginByEmailRequest) (string, error)
-	GenerateToken(ctx *fiber.Ctx, code string, state string) (map[string]interface{}, error)
 	ValidateToken(ctx *fiber.Ctx, token string) (bool, error)
 	RefreshToken(ctx *fiber.Ctx, oldToken string) (string, error)
 }
@@ -38,11 +37,6 @@ func (s authService) LoginByEmail(ctx *fiber.Ctx, loginRequest authDto.LoginByEm
 		return "", err
 	}
 	return resp.AccessToken, nil
-}
-
-func (s authService) GenerateToken(ctx *fiber.Ctx, code string, state string) (map[string]interface{}, error) {
-	// Return both tokens and user info
-	return nil, nil
 }
 
 func (s authService) ValidateToken(ctx *fiber.Ctx, token string) (bool, error) {

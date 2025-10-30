@@ -3,7 +3,7 @@ package productDao
 import (
 	"github.com/abdulmalikraji/e-commerce/db/connection"
 	"github.com/abdulmalikraji/e-commerce/db/models"
-	"github.com/abdulmalikraji/e-commerce/dto"
+	"github.com/abdulmalikraji/e-commerce/dto/productDto"
 	"gorm.io/gorm"
 )
 
@@ -21,7 +21,7 @@ type DataAccess interface {
 	Update(item models.Product) error
 	SoftDelete(id string) error
 	Delete(id string) error
-	FindByFilter(filter dto.ProductFilter) ([]models.Product, int64, error)
+	FindByFilter(filter productDto.ProductFilter) ([]models.Product, int64, error)
 }
 
 type dataAccess struct {
@@ -220,7 +220,7 @@ func (d dataAccess) Delete(id string) error {
 // Add more fields as needed
 // Pagination: Page (1-based), PageSize
 
-func (d dataAccess) FindByFilter(filter dto.ProductFilter) ([]models.Product, int64, error) {
+func (d dataAccess) FindByFilter(filter productDto.ProductFilter) ([]models.Product, int64, error) {
 	query := d.db.Table(models.Product{}.TableName()).Where("del_flg = ?", false)
 
 	if filter.MinPrice != nil {

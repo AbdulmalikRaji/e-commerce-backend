@@ -1,4 +1,4 @@
-package dto
+package productDto
 
 type ProductFilter struct {
 	MinPrice     *float64 `json:"min_price,omitempty"`

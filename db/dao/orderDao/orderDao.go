@@ -3,7 +3,7 @@ package orderDao
 import (
 	"github.com/abdulmalikraji/e-commerce/db/connection"
 	"github.com/abdulmalikraji/e-commerce/db/models"
-	"github.com/abdulmalikraji/e-commerce/dto"
+	"github.com/abdulmalikraji/e-commerce/dto/orderDto"
 	"gorm.io/gorm"
 )
 
@@ -13,7 +13,7 @@ type DataAccess interface {
 	FindById(id string) (models.Order, error)
 	FindByBuyerId(userId string) ([]models.Order, error)
 	FindOrderItems(id string) (models.Order, error)
-	FindWithFilters(filter dto.OrderFilter) ([]models.Order, error)
+	FindWithFilters(filter orderDto.OrderFilter) ([]models.Order, error)
 	Insert(item models.Order) (models.Order, error)
 	Update(item models.Order) error
 	SoftDelete(id string) error
@@ -82,7 +82,7 @@ func (d dataAccess) FindOrderItems(id string) (models.Order, error) {
 	return order, nil
 }
 
-func (d dataAccess) FindWithFilters(filter dto.OrderFilter) ([]models.Order, error) {
+func (d dataAccess) FindWithFilters(filter orderDto.OrderFilter) ([]models.Order, error) {
 	var orders []models.Order
 	query := d.db.Table(models.Order{}.TableName()).Where("del_flg = ?", false)
 	if filter.Status != nil {

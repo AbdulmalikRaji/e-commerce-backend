@@ -26,23 +26,4 @@ func InitializeRoutes(app *fiber.App, client connection.Client, auth auth.Client
 	// Auth routes
 	authGroup := app.Group("/auth")
 	authGroup.Post("/login", authHandler.LoginByEmail)
-	authGroup.Get("/callback", func(c *fiber.Ctx) error {
-		code := c.Query("code")
-		state := c.Query("state")
-
-		if code == "" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "No code provided",
-			})
-		}
-
-		tokens, err := authService.GenerateToken(c, code, state)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": err.Error(),
-			})
-		}
-
-		return c.JSON(tokens)
-	})
 }

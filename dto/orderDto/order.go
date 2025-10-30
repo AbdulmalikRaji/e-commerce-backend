@@ -1,4 +1,4 @@
-package dto
+package orderDto
 
 // OrderFilter struct for flexible filtering
 type OrderFilter struct {
