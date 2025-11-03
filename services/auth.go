@@ -17,13 +17,10 @@ const (
 )
 
 type AuthService interface {
-	LoginByEmail(ctx *fiber.Ctx, loginRequest authDto.LoginByEmailRequest) (authDto.LoginByEmailResponse, int, error)
-	ValidateToken(ctx *fiber.Ctx, token string) (bool, error)
-	RefreshToken(ctx *fiber.Ctx, refreshToken string) (string, error)
-	GetAccessToken(ctx *fiber.Ctx) string
-	GetRefreshToken(ctx *fiber.Ctx) string
-	SetTokens(ctx *fiber.Ctx, accessToken, refreshToken string, expiresAt int64)
-	IsTokenExpired(ctx *fiber.Ctx) bool
+	LoginByEmail(ctx *fiber.Ctx, request authDto.LoginByEmailRequest) (authDto.LoginByEmailResponse, int, error)
+	ValidateToken(ctx *fiber.Ctx, token string) error
+	RefreshToken(ctx *fiber.Ctx) (authDto.RefreshTokenResponse, error)
+	Logout(ctx *fiber.Ctx, request authDto.LogoutRequest) error
 }
 
 type authService struct {
@@ -38,70 +35,91 @@ func NewAuthService(userDao userDao.DataAccess, authClient auth.Client) AuthServ
 	}
 }
 
-func (s authService) LoginByEmail(ctx *fiber.Ctx, loginRequest authDto.LoginByEmailRequest) (authDto.LoginByEmailResponse, int, error) {
+func (s authService) LoginByEmail(ctx *fiber.Ctx, request authDto.LoginByEmailRequest) (authDto.LoginByEmailResponse, int, error) {
 	resp, err := s.authClient.Token(types.TokenRequest{
 		GrantType: "password",
-		Email:     loginRequest.Email,
-		Password:  loginRequest.Password,
+		Email:     request.Email,
+		Password:  request.Password,
 	})
 
 	if err != nil {
 		return authDto.LoginByEmailResponse{}, fiber.StatusUnauthorized, err
 	}
 
-	// Set the Authorization header with the new token
+	// Set refresh token in HTTP-only cookie
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    resp.RefreshToken,
+		Path:     "/",
+		Expires:  time.Unix(resp.ExpiresAt, 0),
+		Secure:   true,
+		HTTPOnly: true,
+		SameSite: "Strict",
+	})
+
+	// Set the Authorization header
 	ctx.Set("Authorization", "Bearer "+resp.AccessToken)
 
-	// Store tokens in context
-	s.SetTokens(ctx, resp.AccessToken, resp.RefreshToken, resp.ExpiresAt)
-
+	// Return data for client storage (localStorage)
 	return authDto.LoginByEmailResponse{
-		AccessToken:  resp.AccessToken,
-		RefreshToken: resp.RefreshToken,
-		ExpiresAt:    resp.ExpiresAt,
+		AccessToken: resp.AccessToken,
+		ExpiresAt:   time.Unix(resp.ExpiresAt, 0),
 	}, fiber.StatusOK, nil
 }
 
-// GetAccessToken retrieves the access token from the context
-func (s authService) GetAccessToken(ctx *fiber.Ctx) string {
-	return ctx.Locals(accessTokenKey).(string)
-}
-
-// GetRefreshToken retrieves the refresh token from the context
-func (s authService) GetRefreshToken(ctx *fiber.Ctx) string {
-	return ctx.Locals(refreshTokenKey).(string)
-}
-
-// SetTokens stores the tokens and expiry in the context
-func (s authService) SetTokens(ctx *fiber.Ctx, accessToken, refreshToken string, expiresAt int64) {
-	ctx.Locals(accessTokenKey, accessToken)
-	ctx.Locals(refreshTokenKey, refreshToken)
-	ctx.Locals(expiresAtKey, expiresAt)
-}
-
-// IsTokenExpired checks if the current access token is expired
-func (s authService) IsTokenExpired(ctx *fiber.Ctx) bool {
-	expiresAt, ok := ctx.Locals(expiresAtKey).(int64)
-	if !ok {
-		return true
-	}
-	return time.Now().Unix() >= expiresAt
-}
-
-func (s authService) ValidateToken(ctx *fiber.Ctx, token string) (bool, error) {
+func (s authService) ValidateToken(ctx *fiber.Ctx, token string) error {
 	_, err := s.authClient.WithToken(token).GetUser()
 	if err != nil {
-		return false, err
+		return err
 	}
-
-	return true, nil
+	return nil
 }
 
-func (s authService) RefreshToken(ctx *fiber.Ctx, refreshToken string) (string, error) {
-	resp, err := s.authClient.RefreshToken(refreshToken)
-	if err != nil {
-		return "", err
+func (s authService) RefreshToken(ctx *fiber.Ctx) (authDto.RefreshTokenResponse, error) {
+	// Get refresh token from cookie
+	refreshToken := ctx.Cookies("refresh_token")
+	if refreshToken == "" {
+		return authDto.RefreshTokenResponse{}, fiber.NewError(fiber.StatusUnauthorized, "No refresh token found")
 	}
 
-	return resp.AccessToken, nil
+	// Get new access token
+	resp, err := s.authClient.RefreshToken(refreshToken)
+	if err != nil {
+		return authDto.RefreshTokenResponse{}, err
+	}
+
+	// Set the Authorization header
+	ctx.Set("Authorization", "Bearer "+resp.AccessToken)
+
+	//update the refresh token cookie
+	// Set refresh token in HTTP-only cookie
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    resp.RefreshToken,
+		Path:     "/",
+		Expires:  time.Unix(resp.ExpiresAt, 0),
+		Secure:   true,
+		HTTPOnly: true,
+		SameSite: "Strict",
+	})
+
+	return authDto.RefreshTokenResponse{
+		AccessToken: resp.AccessToken,
+		ExpiresAt:   time.Unix(resp.ExpiresAt, 0),
+	}, nil
+}
+
+func (s authService) Logout(ctx *fiber.Ctx, request authDto.LogoutRequest) error {
+	// Invalidate the access token
+	err := s.authClient.WithToken(request.AccessToken).Logout()
+	if err != nil {
+		return err
+	}
+	// Clear the refresh token cookie
+	ctx.Cookie(&fiber.Cookie{
+		Name:    "refresh_token",
+		Value:   "",
+		Expires: time.Now().Add(-1 * time.Hour),
+	})
+	return nil
 }
