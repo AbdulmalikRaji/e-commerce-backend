@@ -4,6 +4,7 @@ import (
 	"github.com/abdulmalikraji/e-commerce/config/middleware"
 	"github.com/abdulmalikraji/e-commerce/db/connection"
 	"github.com/abdulmalikraji/e-commerce/db/dao/userDao"
+	"github.com/abdulmalikraji/e-commerce/db/dao/userTokenDao"
 	"github.com/abdulmalikraji/e-commerce/handler/authentication"
 	"github.com/abdulmalikraji/e-commerce/services"
 	"github.com/gofiber/fiber/v2"
@@ -11,9 +12,12 @@ import (
 )
 
 func InitializeRoutes(app *fiber.App, client connection.Client, auth auth.Client) {
-	// Initialize services
+	// Initialize DB DAOs
 	userDao := userDao.New(client)
-	authService := services.NewAuthService(userDao, auth)
+	userTokenDao := userTokenDao.New(client)
+
+	// Initialize Services
+	authService := services.NewAuthService(userDao, auth, userTokenDao)
 	authHandler := authentication.New(authService)
 
 	// Create auth middleware

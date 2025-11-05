@@ -8,14 +8,13 @@ type LoginByEmailRequest struct {
 }
 
 type LoginByEmailResponse struct {
-	AccessToken  string    `json:"access_token"`
-	RefreshToken string    `json:"refresh_token"`
-	ExpiresAt    time.Time `json:"expires_at"`
+	AccessToken string    `json:"access_token"`
+	ExpiresAt   time.Time `json:"expires_at"`
 }
 
 type RefreshTokenResponse struct {
-	AccessToken string `json:"access_token"`
-	ExpiresAt   time.Time  `json:"expires_at"`
+	AccessToken string    `json:"access_token"`
+	ExpiresAt   time.Time `json:"expires_at"`
 }
 
 type LogoutRequest struct {

@@ -52,6 +52,7 @@ func Migrate(connection *gorm.DB) {
 			&models.Tag{},
 			&models.Warehouse{},
 			&models.WarehouseStock{},
+			&models.UserToken{},
 			&models.ProductView{},
 			&models.AddToCartEvent{},
 			&models.SearchAnalytics{},

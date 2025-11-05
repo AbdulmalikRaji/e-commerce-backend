@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/abdulmalikraji/e-commerce/db/dao/userDao"
+	"github.com/abdulmalikraji/e-commerce/db/dao/userTokenDao"
+	"github.com/abdulmalikraji/e-commerce/db/models"
 	"github.com/abdulmalikraji/e-commerce/dto/authDto"
 	"github.com/gofiber/fiber/v2"
 	"github.com/supabase-community/auth-go"
@@ -24,14 +26,20 @@ type AuthService interface {
 }
 
 type authService struct {
-	userDao    userDao.DataAccess
-	authClient auth.Client
+	userDao      userDao.DataAccess
+	authClient   auth.Client
+	userTokenDao userTokenDao.DataAccess
 }
 
-func NewAuthService(userDao userDao.DataAccess, authClient auth.Client) AuthService {
+func NewAuthService(
+	userDao userDao.DataAccess,
+	authClient auth.Client,
+	userTokenDao userTokenDao.DataAccess,
+) AuthService {
 	return authService{
-		userDao:    userDao,
-		authClient: authClient,
+		userDao:      userDao,
+		authClient:   authClient,
+		userTokenDao: userTokenDao,
 	}
 }
 
@@ -56,6 +64,17 @@ func (s authService) LoginByEmail(ctx *fiber.Ctx, request authDto.LoginByEmailRe
 		HTTPOnly: true,
 		SameSite: "Strict",
 	})
+
+	// Store the user token in the database
+	_, err = s.userTokenDao.Insert(models.UserToken{
+		UserID:       resp.User.ID,
+		RefreshToken: resp.RefreshToken,
+		IsRevoked:    false,
+		ExpiresAt:    time.Unix(resp.ExpiresAt, 0),
+	})
+	if err != nil {
+		return authDto.LoginByEmailResponse{}, fiber.StatusInternalServerError, err
+	}
 
 	// Set the Authorization header
 	ctx.Set("Authorization", "Bearer "+resp.AccessToken)
@@ -82,6 +101,21 @@ func (s authService) RefreshToken(ctx *fiber.Ctx) (authDto.RefreshTokenResponse,
 		return authDto.RefreshTokenResponse{}, fiber.NewError(fiber.StatusUnauthorized, "No refresh token found")
 	}
 
+	// Check if the token is revoked
+	token, err := s.userTokenDao.FindByRefreshToken(refreshToken)
+	if err != nil {
+		return authDto.RefreshTokenResponse{}, err
+	}
+	if token.IsRevoked {
+		return authDto.RefreshTokenResponse{}, fiber.NewError(fiber.StatusUnauthorized, "Refresh token has been revoked")
+	}
+
+	//revoke the old refresh token
+	err = s.userTokenDao.RevokeToken(token.ID.String())
+	if err != nil {
+		return authDto.RefreshTokenResponse{}, err
+	}
+
 	// Get new access token
 	resp, err := s.authClient.RefreshToken(refreshToken)
 	if err != nil {
@@ -101,6 +135,14 @@ func (s authService) RefreshToken(ctx *fiber.Ctx) (authDto.RefreshTokenResponse,
 		Secure:   true,
 		HTTPOnly: true,
 		SameSite: "Strict",
+	})
+
+	// Store the user token in the database
+	_, err = s.userTokenDao.Insert(models.UserToken{
+		UserID:       resp.User.ID,
+		RefreshToken: resp.RefreshToken,
+		IsRevoked:    false,
+		ExpiresAt:    time.Unix(resp.ExpiresAt, 0),
 	})
 
 	return authDto.RefreshTokenResponse{
