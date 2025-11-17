@@ -8,9 +8,10 @@ import (
 
 type User struct {
 	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	Auth0ID     string    `gorm:"type:text;uniqueIndex;not null" json:"auth0_id"`
+	Auth0ID     uuid.UUID `gorm:"type:text;uniqueIndex;not null" json:"auth0_id"`
 	Email       string    `gorm:"type:text;uniqueIndex;not null" json:"email"`
-	Name        string    `gorm:"type:varchar(100)" json:"name"`
+	FirstName   string    `gorm:"type:varchar(50)" json:"first_name"`
+	LastName    string    `gorm:"type:varchar(50)" json:"last_name"`
 	PhoneNumber string    `gorm:"type:varchar(20)" json:"phone_number"`
 	Role        string    `gorm:"type:varchar(20);not null;default:'buyer'" json:"role"` // buyer | seller | admin
 	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`

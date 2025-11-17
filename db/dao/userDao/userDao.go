@@ -16,10 +16,14 @@ type DataAccess interface {
 	FindUserAddresses(id string) (models.User, error)
 	FindUserNotifications(id string) (models.User, error)
 	FindUserCart(id string) (models.User, error)
+	IsEmailExists(email string) bool
 	Insert(item models.User) (models.User, error)
 	Update(item models.User) error
 	SoftDelete(id string) error
 	Delete(id string) error
+	// Transaction runs the provided function inside a DB transaction. If fn returns an error,
+	// the transaction is rolled back. Use this to perform multiple DB operations atomically.
+	Transaction(fn func(tx *gorm.DB) error) error
 }
 
 type dataAccess struct {
@@ -132,6 +136,14 @@ func (d dataAccess) FindUserCart(id string) (models.User, error) {
 	}
 	return user, nil
 }
+ 
+func (d dataAccess) IsEmailExists(email string) bool {
+	var user models.User
+	result := d.db.Table(models.User{}.TableName()).
+		Where("email = ? AND del_flg = ?", email, false).
+		First(&user)
+	return result.Error == nil
+}
 
 func (d dataAccess) Insert(item models.User) (models.User, error) {
 
@@ -184,4 +196,9 @@ func (d dataAccess) Delete(id string) error {
 	}
 
 	return nil
+}
+
+// Transaction executes fn inside a gorm transaction using the DAO's DB connection.
+func (d dataAccess) Transaction(fn func(tx *gorm.DB) error) error {
+	return d.db.Transaction(fn)
 }

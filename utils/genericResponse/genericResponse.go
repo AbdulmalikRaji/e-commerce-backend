@@ -21,13 +21,20 @@ func SuccessResponse(ctx *fiber.Ctx, status int, data interface{}, msg ...string
 }
 
 func ErrorResponse(ctx *fiber.Ctx, status int, msg string, data ...interface{}) error {
+	// If caller provided exactly one data argument, return it directly as Data.
+	// Otherwise return the slice of provided data (or empty slice if none).
+	var out interface{}
 	if len(data) == 0 {
-		data = []interface{}{}
+		out = []interface{}{}
+	} else if len(data) == 1 {
+		out = data[0]
+	} else {
+		out = data
 	}
 
 	return ctx.Status(status).JSON(GenericResponse{
 		Success: false,
 		Message: msg,
-		Data:    data,
+		Data:    out,
 	})
 }

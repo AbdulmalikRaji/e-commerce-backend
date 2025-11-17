@@ -20,3 +20,23 @@ type RefreshTokenResponse struct {
 type LogoutRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 }
+
+type SignUpByEmailRequest struct {
+	Firstname       string      `json:"first_name" validate:"required"`
+	Lastname        string      `json:"last_name" validate:"required"`
+	Email           string      `json:"email" validate:"required,email"`
+	Password        string      `json:"password" validate:"required,min=8"`
+	ConfirmPassword string      `json:"confirm_password" validate:"required,eqfield=Password"`
+	Address         UserAddress `json:"address" validate:"required,dive"`
+	Role            string      `json:"role" validate:"required,oneof=buyer seller admin"`
+}
+
+type UserAddress struct {
+	Line1      string `json:"line1" validate:"required"`
+	Line2      string `json:"line2"`
+	City       string `json:"city" validate:"required"`
+	State      string `json:"state" validate:"required"`
+	PostalCode string `json:"postal_code"`
+	Country    string `json:"country" validate:"required"`
+	IsDefault  bool   `json:"is_default"`
+}
