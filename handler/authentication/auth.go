@@ -100,3 +100,15 @@ func (c authHandler) Logout(ctx *fiber.Ctx) error {
 
 	return genericResponse.SuccessResponse(ctx, fiber.StatusOK, nil, "Logout successful")
 }
+
+func (c authHandler) ForgotPassword(ctx *fiber.Ctx) error {
+	var forgotPasswordRequest authDto.ForgotPasswordRequest
+	if err := ctx.BodyParser(&forgotPasswordRequest); err != nil {
+		return genericResponse.ErrorResponse(ctx, fiber.StatusBadRequest, err.Error())
+	}
+	err := c.service.ForgotPassword(ctx, forgotPasswordRequest)
+	if err != nil {
+		return genericResponse.ErrorResponse(ctx, fiber.StatusBadRequest, err.Error())
+	}
+	return genericResponse.SuccessResponse(ctx, fiber.StatusOK, nil, "Password recovery email sent")
+}

@@ -2,6 +2,7 @@ package services
 
 import (
 	"os"
+	"strings"
 	"time"
 
 	"github.com/abdulmalikraji/e-commerce/db/dao/userDao"
@@ -22,12 +23,15 @@ const (
 	expiresAtKey    = "expires_at"
 )
 
+var refreshExpiry = time.Now().Add(7 * 24 * time.Hour)
+
 type AuthService interface {
 	LoginByEmail(ctx *fiber.Ctx, request authDto.LoginByEmailRequest) (authDto.LoginByEmailResponse, int, error)
 	SignupByEmail(ctx *fiber.Ctx, request authDto.SignUpByEmailRequest) (int, error)
 	ValidateToken(ctx *fiber.Ctx, token string) error
 	RefreshToken(ctx *fiber.Ctx) (authDto.RefreshTokenResponse, error)
 	Logout(ctx *fiber.Ctx, request authDto.LogoutRequest) error
+	ForgotPassword(ctx *fiber.Ctx, request authDto.ForgotPasswordRequest) error
 }
 
 type authService struct {
@@ -65,7 +69,7 @@ func (s authService) LoginByEmail(ctx *fiber.Ctx, request authDto.LoginByEmailRe
 		Name:     "refresh_token",
 		Value:    resp.RefreshToken,
 		Path:     "/",
-		Expires:  time.Unix(resp.ExpiresAt, 0),
+		Expires:  refreshExpiry,
 		Secure:   true,
 		HTTPOnly: true,
 		SameSite: "Strict",
@@ -76,7 +80,7 @@ func (s authService) LoginByEmail(ctx *fiber.Ctx, request authDto.LoginByEmailRe
 		UserID:       resp.User.ID,
 		RefreshToken: resp.RefreshToken,
 		IsRevoked:    false,
-		ExpiresAt:    time.Unix(resp.ExpiresAt, 0),
+		ExpiresAt:    refreshExpiry,
 	})
 	if err != nil {
 		log.Errorf("failed to store user token for user_id=%s: %v", resp.User.ID, err)
@@ -170,7 +174,7 @@ func (s authService) RefreshToken(ctx *fiber.Ctx) (authDto.RefreshTokenResponse,
 	}
 
 	//revoke the old refresh token
-	err = s.userTokenDao.RevokeToken(token.ID.String())
+	err = s.userTokenDao.RevokeToken(token.RefreshToken)
 	if err != nil {
 		return authDto.RefreshTokenResponse{}, err
 	}
@@ -190,7 +194,7 @@ func (s authService) RefreshToken(ctx *fiber.Ctx) (authDto.RefreshTokenResponse,
 		Name:     "refresh_token",
 		Value:    resp.RefreshToken,
 		Path:     "/",
-		Expires:  time.Unix(resp.ExpiresAt, 0),
+		Expires:  refreshExpiry,
 		Secure:   true,
 		HTTPOnly: true,
 		SameSite: "Strict",
@@ -201,7 +205,7 @@ func (s authService) RefreshToken(ctx *fiber.Ctx) (authDto.RefreshTokenResponse,
 		UserID:       resp.User.ID,
 		RefreshToken: resp.RefreshToken,
 		IsRevoked:    false,
-		ExpiresAt:    time.Unix(resp.ExpiresAt, 0),
+		ExpiresAt:    refreshExpiry,
 	})
 
 	return authDto.RefreshTokenResponse{
@@ -213,19 +217,56 @@ func (s authService) RefreshToken(ctx *fiber.Ctx) (authDto.RefreshTokenResponse,
 func (s authService) Logout(ctx *fiber.Ctx, request authDto.LogoutRequest) error {
 
 	token := ctx.Get("Authorization")
-	if token == "" {
+	if token == "" && token[:7] != "Bearer " {
 		return fiber.NewError(fiber.StatusUnauthorized, "Missing authorization header")
 	}
-	// Invalidate the access token
-	err := s.authClient.WithToken(token).Logout()
+	token = strings.TrimPrefix(token, "Bearer ")
+
+	client := s.authClient.WithToken(token)
+	user, err := client.GetUser()
 	if err != nil {
 		return err
 	}
+
+	// Invalidate the access token
+	err = client.Logout()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "An error occured during logout")
+	}
+
+	refreshToken := ctx.Cookies("refresh_token")
+	if refreshToken != "" {
+		// Revoke the refresh token in the database
+		err = s.userTokenDao.RevokeToken(refreshToken)
+		if err != nil && err != gorm.ErrRecordNotFound {
+			return fiber.NewError(fiber.StatusInternalServerError, "An error occured during logout")
+		}
+	}
+
 	// Clear the refresh token cookie
 	ctx.Cookie(&fiber.Cookie{
-		Name:    "refresh_token",
-		Value:   "",
-		Expires: time.Now().Add(-1 * time.Hour),
+		Name:     "refresh_token",
+		Path:     "/",
+		Value:    "",
+		Expires:  time.Now().Add(-1 * time.Hour),
+		Secure:   true,
+		HTTPOnly: true,
+		SameSite: "Strict",
 	})
+
+	log.Infof("user %s logged out successfully", user.ID.String())
+	return nil
+}
+
+func (s authService) ForgotPassword(ctx *fiber.Ctx, request authDto.ForgotPasswordRequest) error {
+	err := s.authClient.Recover(types.RecoverRequest{
+		Email: request.Email,
+	})
+	if err != nil {
+		log.Infof("password recovery initiation failed for email=%s: %v", request.Email, err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to initiate password recovery")
+	}
+
+	log.Infof("password recovery initiated for email=%s", request.Email)
 	return nil
 }

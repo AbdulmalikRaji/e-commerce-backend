@@ -14,7 +14,7 @@ type DataAccess interface {
 	Insert(item models.UserToken) (models.UserToken, error)
 	Update(item models.UserToken) error
 	FindByRefreshToken(refreshToken string) (models.UserToken, error)
-	RevokeToken(id string) error
+	RevokeToken(refreshToken string) error
 	DeleteExpiredTokens() error
 	SoftDelete(id string) error
 	Delete(id string) error
@@ -96,15 +96,15 @@ func (d dataAccess) FindByRefreshToken(refreshToken string) (models.UserToken, e
 	return token, nil
 }
 
-func (d dataAccess) RevokeToken(id string) error {
+func (d dataAccess) RevokeToken(refreshToken string) error {
 	result := d.db.Table(models.UserToken{}.TableName()).
-		Where(idWhere, id).
+		Where("refresh_token = ? AND del_flg = ?", refreshToken, false).
 		Update("is_revoked", true)
 	if result.Error != nil {
 		return result.Error
 	}
-		return nil
-	}
+	return nil
+}
 
 func (d dataAccess) DeleteExpiredTokens() error {
 	result := d.db.Table(models.UserToken{}.TableName()).

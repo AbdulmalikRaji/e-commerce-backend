@@ -41,3 +41,17 @@ type UserAddress struct {
 	Country    string `json:"country" validate:"required"`
 	IsDefault  bool   `json:"is_default"`
 }
+
+type ForgotPasswordRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type ResetPasswordRequest struct {
+	ResetToken      string `json:"reset_token" validate:"required"`
+	NewPassword     string `json:"new_password" validate:"required,min=8"`
+	ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=NewPassword"`
+}
+
+type ForgotPasswordResponse struct {
+	Message string `json:"message"`
+}
