@@ -47,12 +47,9 @@ func TokenValidationMiddleware(authService services.AuthService) fiber.Handler {
 				return genericResponse.ErrorResponse(c, fiber.StatusUnauthorized,
 					messages.CreateMsg(c, messages.InvalidToken, nil))
 			}
-
-			// Set new access token in response header
-			newToken := refreshData.AccessToken
-			c.Set("Authorization", bearerPrefix+newToken)
-
+			
 			// Update request header for downstream handlers
+			newToken := refreshData.AccessToken
 			c.Request().Header.Set("Authorization", bearerPrefix+newToken)
 		}
 
