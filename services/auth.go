@@ -139,15 +139,8 @@ func (s authService) SignupByEmail(ctx *fiber.Ctx, request authDto.SignUpByEmail
 		log.Errorf("signup failed for email=%s: %v", request.Email, err)
 		return fiber.StatusInternalServerError, err
 	}
-	// Audit log - do not log sensitive data
+	// Audit log for successful signup
 	log.Infof("signup success user_id=%s email=%s", userResp.ID.String(), request.Email)
-	// Post-creation: start background goroutine to enqueue verification email/welcome job.
-	go func(uid string, email string) {
-		// Placeholder background task — replace with real queueing (Redis/RabbitMQ) later.
-		log.Infof("background job placeholder: send verification email for user_id=%s email=%s", uid, email)
-	}(userResp.ID.String(), request.Email)
-
-	log.Infof("enqueued post-signup tasks for user_id=%s", userResp.ID.String())
 
 	return fiber.StatusCreated, nil
 }

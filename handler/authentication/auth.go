@@ -40,7 +40,17 @@ func (c authHandler) LoginByEmail(ctx *fiber.Ctx) error {
 }
 
 func (c authHandler) SignUp(ctx *fiber.Ctx) error {
-	return nil
+	var signUpRequest authDto.SignUpByEmailRequest
+	if err := ctx.BodyParser(&signUpRequest); err != nil {
+		return genericResponse.ErrorResponse(ctx, fiber.StatusBadRequest, err.Error())
+	}
+
+	status, err := c.service.SignupByEmail(ctx, signUpRequest)
+	if err != nil {
+		return genericResponse.ErrorResponse(ctx, fiber.StatusBadRequest, err.Error())
+	}
+
+	return genericResponse.SuccessResponse(ctx, status, nil, "Sign up successful, Check your email for verification link")
 }
 
 // ValidateToken validates the current token
