@@ -55,3 +55,18 @@ type ResetPasswordRequest struct {
 type ForgotPasswordResponse struct {
 	Message string `json:"message"`
 }
+
+type GetUserRequest struct {
+	UserID string `json:"user_id" validate:"required,uuid4"`
+}
+
+type GetUserResponse struct {
+	UserID         string      `json:"user_id"`
+	AuthID         string      `json:"auth_id"`
+	Firstname      string      `json:"first_name"`
+	Lastname       string      `json:"last_name"`
+	Email          string      `json:"email"`
+	PhoneNumber    string      `json:"phone_number"`
+	Role           string      `json:"role"`
+	DefaultAddress UserAddress `json:"default_address"`
+}

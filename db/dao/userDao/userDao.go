@@ -17,6 +17,7 @@ type DataAccess interface {
 	FindUserNotifications(id string) (models.User, error)
 	FindUserCart(id string) (models.User, error)
 	IsEmailExists(email string) bool
+	IsPhoneNumberExists(phone string) bool
 	Insert(item models.User) (models.User, error)
 	Update(item models.User) error
 	SoftDelete(id string) error
@@ -141,6 +142,14 @@ func (d dataAccess) IsEmailExists(email string) bool {
 	var user models.User
 	result := d.db.Table(models.User{}.TableName()).
 		Where("email = ? AND del_flg = ?", email, false).
+		First(&user)
+	return result.Error == nil
+}
+
+func (d dataAccess) IsPhoneNumberExists(phone string) bool {
+	var user models.User
+	result := d.db.Table(models.User{}.TableName()).
+		Where("phone_number = ? AND del_flg = ?", phone, false).
 		First(&user)
 	return result.Error == nil
 }

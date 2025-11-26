@@ -28,26 +28,26 @@ func extractToken(authHeader string) (string, error) {
 func TokenValidationMiddleware(authService services.AuthService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Skip auth for login and refresh routes
-		if c.Path() == "/auth/login" || c.Path() == "/auth/refresh" {
-			return c.Next()
-		}
+		// if c.Path() == "/auth/login" || c.Path() == "/auth/refresh" || c.Path() == "/auth/register" {
+		// 	return c.Next()
+		// }
 
 		// Extract token from header
 		token, err := extractToken(c.Get("Authorization"))
 		if err != nil {
 			return genericResponse.ErrorResponse(c, fiber.StatusUnauthorized,
-				messages.CreateMsg(c, messages.RequiredField, map[string]string{"Field": "authorization token"}))
+				messages.CreateMsg(c, messages.Unauthorized))
 		}
 
 		// Validate token
-		if err := authService.ValidateToken(c, token); err != nil {
+		if _, err := authService.ValidateToken(c, token); err != nil {
 			// Token is invalid, try to refresh
-			refreshData, err := authService.RefreshToken(c)
+			refreshData, status, err := authService.RefreshToken(c)
 			if err != nil {
-				return genericResponse.ErrorResponse(c, fiber.StatusUnauthorized,
+				return genericResponse.ErrorResponse(c, status,
 					messages.CreateMsg(c, messages.InvalidToken, nil))
 			}
-			
+
 			// Update request header for downstream handlers
 			newToken := refreshData.AccessToken
 			c.Request().Header.Set("Authorization", bearerPrefix+newToken)

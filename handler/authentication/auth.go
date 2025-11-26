@@ -62,8 +62,8 @@ func (c authHandler) ValidateToken(ctx *fiber.Ctx) error {
 	}
 
 	token := authHeader[7:]
-	if err := c.service.ValidateToken(ctx, token); err != nil {
-		return genericResponse.ErrorResponse(ctx, fiber.StatusUnauthorized, "Invalid token")
+	if status, err := c.service.ValidateToken(ctx, token); err != nil {
+		return genericResponse.ErrorResponse(ctx, status, "Invalid token")
 	}
 
 	return genericResponse.SuccessResponse(ctx, fiber.StatusOK, nil, "Token is valid")
@@ -71,12 +71,12 @@ func (c authHandler) ValidateToken(ctx *fiber.Ctx) error {
 
 // RefreshToken refreshes the current access token using the refresh token
 func (c authHandler) RefreshToken(ctx *fiber.Ctx) error {
-	data, err := c.service.RefreshToken(ctx)
+	data, status, err := c.service.RefreshToken(ctx)
 	if err != nil {
-		return genericResponse.ErrorResponse(ctx, fiber.StatusUnauthorized, "Failed to refresh token")
+		return genericResponse.ErrorResponse(ctx, status, "Failed to refresh token")
 	}
 
-	return genericResponse.SuccessResponse(ctx, fiber.StatusOK, data, "Token refreshed successfully")
+	return genericResponse.SuccessResponse(ctx, status, data, "Token refreshed successfully")
 }
 
 func (c authHandler) Logout(ctx *fiber.Ctx) error {
@@ -88,17 +88,18 @@ func (c authHandler) Logout(ctx *fiber.Ctx) error {
 	}
 
 	token := authHeader[7:]
-	if err := c.service.ValidateToken(ctx, token); err != nil {
-		return genericResponse.ErrorResponse(ctx, fiber.StatusUnauthorized, "Invalid token")
+	if status, err := c.service.ValidateToken(ctx, token); err != nil {
+		return genericResponse.ErrorResponse(ctx, status, "Invalid token")
 	}
 
 	logoutRequest.AccessToken = token
 
-	if err := c.service.Logout(ctx, logoutRequest); err != nil {
-		return genericResponse.ErrorResponse(ctx, fiber.StatusUnauthorized, err.Error())
+	status, err := c.service.Logout(ctx, logoutRequest) 
+	if err != nil {
+		return genericResponse.ErrorResponse(ctx, status, err.Error())
 	}
 
-	return genericResponse.SuccessResponse(ctx, fiber.StatusOK, nil, "Logout successful")
+	return genericResponse.SuccessResponse(ctx, status, nil, "Logout successful")
 }
 
 func (c authHandler) ForgotPassword(ctx *fiber.Ctx) error {
@@ -106,9 +107,9 @@ func (c authHandler) ForgotPassword(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(&forgotPasswordRequest); err != nil {
 		return genericResponse.ErrorResponse(ctx, fiber.StatusBadRequest, err.Error())
 	}
-	err := c.service.ForgotPassword(ctx, forgotPasswordRequest)
+	status, err := c.service.ForgotPassword(ctx, forgotPasswordRequest)
 	if err != nil {
-		return genericResponse.ErrorResponse(ctx, fiber.StatusBadRequest, err.Error())
+		return genericResponse.ErrorResponse(ctx, status, err.Error())
 	}
-	return genericResponse.SuccessResponse(ctx, fiber.StatusOK, nil, "Password recovery email sent")
+	return genericResponse.SuccessResponse(ctx, status, nil, "Password recovery email sent")
 }

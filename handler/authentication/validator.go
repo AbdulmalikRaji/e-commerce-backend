@@ -56,6 +56,13 @@ func SignUpByEmailRequestValidator(ctx *fiber.Ctx) error {
 		errs["email"] = append(errs["email"], messages.CreateMsg(ctx, messages.InvalidFormat, map[string]string{"Field": "Email"}))
 	}
 
+	//Phone Number
+	if request.PhoneNumber == "" {
+		errs["phone_number"] = append(errs["phone_number"], messages.CreateMsg(ctx, messages.RequiredField, map[string]string{"Field": "Phone Number"}))
+	} else if !utils.PhoneNumberRegex(request.PhoneNumber) {
+		errs["phone_number"] = append(errs["phone_number"], messages.CreateMsg(ctx, messages.InvalidFormat, map[string]string{"Field": "Phone Number"}))
+	}
+
 	// Password
 	if request.Password == "" {
 		errs["password"] = append(errs["password"], messages.CreateMsg(ctx, messages.RequiredField, map[string]string{"Field": "Password"}))

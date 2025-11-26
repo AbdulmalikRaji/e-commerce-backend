@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"time"
@@ -28,10 +29,11 @@ var refreshExpiry = time.Now().Add(7 * 24 * time.Hour)
 type AuthService interface {
 	LoginByEmail(ctx *fiber.Ctx, request authDto.LoginByEmailRequest) (authDto.LoginByEmailResponse, int, error)
 	SignupByEmail(ctx *fiber.Ctx, request authDto.SignUpByEmailRequest) (int, error)
-	ValidateToken(ctx *fiber.Ctx, token string) error
-	RefreshToken(ctx *fiber.Ctx) (authDto.RefreshTokenResponse, error)
-	Logout(ctx *fiber.Ctx, request authDto.LogoutRequest) error
-	ForgotPassword(ctx *fiber.Ctx, request authDto.ForgotPasswordRequest) error
+	GetUser(ctx *fiber.Ctx, request authDto.GetUserRequest) (authDto.GetUserResponse, int, error)
+	ValidateToken(ctx *fiber.Ctx, token string) (int, error)
+	RefreshToken(ctx *fiber.Ctx) (authDto.RefreshTokenResponse, int, error)
+	Logout(ctx *fiber.Ctx, request authDto.LogoutRequest) (int, error)
+	ForgotPassword(ctx *fiber.Ctx, request authDto.ForgotPasswordRequest) (int, error)
 }
 
 type authService struct {
@@ -99,8 +101,8 @@ func (s authService) LoginByEmail(ctx *fiber.Ctx, request authDto.LoginByEmailRe
 
 func (s authService) SignupByEmail(ctx *fiber.Ctx, request authDto.SignUpByEmailRequest) (int, error) {
 
-	if s.userDao.IsEmailExists(request.Email) {
-		return fiber.StatusConflict, fiber.NewError(fiber.StatusConflict, "Email already exists")
+	if s.userDao.IsEmailExists(request.Email) || s.userDao.IsPhoneNumberExists(request.PhoneNumber) {
+		return fiber.StatusConflict, fiber.NewError(fiber.StatusConflict, "Email or phone number already exists")
 	}
 
 	// Create user in Auth0
@@ -113,17 +115,37 @@ func (s authService) SignupByEmail(ctx *fiber.Ctx, request authDto.SignUpByEmail
 			"role":       request.Role,
 		},
 	})
-	if err != nil && userResp.ID == uuid.Nil {
+	if err != nil || userResp.ID == uuid.Nil {
+		log.Error(err)
+		return fiber.StatusInternalServerError, err
+	}
+	log.Infof("auth service user created with id=%s for email=%s", userResp.ID.String(), request.Email)
+
+	// Update phone number in Auth0
+	resp, err := s.authClient.WithToken(os.Getenv("SERVICE_ROLE_KEY")).AdminUpdateUser(types.AdminUpdateUserRequest{
+		UserID: userResp.ID,
+		Phone:  request.PhoneNumber,
+	})
+	if err != nil || resp.ID == uuid.Nil {
+		// Attempt best-effort cleanup: delete the auth provider user we just created
+		if delErr := s.authClient.WithToken(os.Getenv("SERVICE_ROLE_KEY")).AdminDeleteUser(types.AdminDeleteUserRequest{UserID: userResp.ID}); delErr != nil {
+			log.Warnf("cleanup failed for auth user %s after phone update error: %v", userResp.ID.String(), delErr)
+		} else {
+			log.Infof("cleaned up auth user %s after phone update error", userResp.ID.String())
+		}
+		log.Error(err)
 		return fiber.StatusInternalServerError, err
 	}
 
 	// Store user in the database inside a transaction so DB changes are rolled back on error.
 	err = s.userDao.Transaction(func(tx *gorm.DB) error {
 		newUser := models.User{
-			Auth0ID:   userResp.ID,
-			Email:     request.Email,
-			FirstName: request.Firstname,
-			LastName:  request.Lastname,
+			AuthID:      userResp.ID,
+			Email:       request.Email,
+			FirstName:   request.Firstname,
+			LastName:    request.Lastname,
+			PhoneNumber: request.PhoneNumber,
+			Role:        request.Role,
 		}
 
 		res := tx.Table(newUser.TableName()).Create(&newUser)
@@ -149,40 +171,62 @@ func (s authService) SignupByEmail(ctx *fiber.Ctx, request authDto.SignUpByEmail
 	return fiber.StatusCreated, nil
 }
 
-func (s authService) ValidateToken(ctx *fiber.Ctx, token string) error {
-	_, err := s.authClient.WithToken(token).GetUser()
+func (s authService) GetUser(ctx *fiber.Ctx, request authDto.GetUserRequest) (authDto.GetUserResponse, int, error) {
+
+	// Fetch user from database
+	user, err := s.userDao.FindById(request.UserID)
 	if err != nil {
-		return err
+		return authDto.GetUserResponse{}, fiber.StatusInternalServerError, err
 	}
-	return nil
+
+	//Todo:get user default address
+
+	// Map to DTO
+	return authDto.GetUserResponse{
+		UserID:      user.ID.String(),
+		AuthID:      user.AuthID.String(),
+		Firstname:   user.FirstName,
+		Lastname:    user.LastName,
+		Email:       user.Email,
+		PhoneNumber: user.PhoneNumber,
+		Role:        user.Role,
+	}, fiber.StatusOK, nil
 }
 
-func (s authService) RefreshToken(ctx *fiber.Ctx) (authDto.RefreshTokenResponse, error) {
+func (s authService) ValidateToken(ctx *fiber.Ctx, token string) (int, error) {
+	_, err := s.authClient.WithToken(token).GetUser()
+	if err != nil {
+		return fiber.StatusUnauthorized, err
+	}
+	return fiber.StatusOK, nil
+}
+
+func (s authService) RefreshToken(ctx *fiber.Ctx) (authDto.RefreshTokenResponse, int, error) {
 	// Get refresh token from cookie
 	refreshToken := ctx.Cookies("refresh_token")
 	if refreshToken == "" {
-		return authDto.RefreshTokenResponse{}, fiber.NewError(fiber.StatusUnauthorized, "No refresh token found")
+		return authDto.RefreshTokenResponse{}, fiber.StatusUnauthorized, fiber.NewError(fiber.StatusUnauthorized, "No refresh token found")
 	}
 
 	// Check if the token is revoked
 	token, err := s.userTokenDao.FindByRefreshToken(refreshToken)
 	if err != nil {
-		return authDto.RefreshTokenResponse{}, err
+		return authDto.RefreshTokenResponse{}, fiber.StatusInternalServerError, err
 	}
 	if token.IsRevoked {
-		return authDto.RefreshTokenResponse{}, fiber.NewError(fiber.StatusUnauthorized, "Refresh token has been revoked")
+		return authDto.RefreshTokenResponse{}, fiber.StatusUnauthorized, fiber.NewError(fiber.StatusUnauthorized, "Refresh token has been revoked")
 	}
 
 	//revoke the old refresh token
 	err = s.userTokenDao.RevokeToken(token.RefreshToken)
 	if err != nil {
-		return authDto.RefreshTokenResponse{}, err
+		return authDto.RefreshTokenResponse{}, fiber.StatusInternalServerError, err
 	}
 
 	// Get new access token
 	resp, err := s.authClient.RefreshToken(refreshToken)
 	if err != nil {
-		return authDto.RefreshTokenResponse{}, err
+		return authDto.RefreshTokenResponse{}, fiber.StatusInternalServerError, err
 	}
 
 	// Set the Authorization header
@@ -211,35 +255,45 @@ func (s authService) RefreshToken(ctx *fiber.Ctx) (authDto.RefreshTokenResponse,
 	return authDto.RefreshTokenResponse{
 		AccessToken: resp.AccessToken,
 		ExpiresAt:   time.Unix(resp.ExpiresAt, 0),
-	}, nil
+	}, fiber.StatusOK, nil
 }
 
-func (s authService) Logout(ctx *fiber.Ctx, request authDto.LogoutRequest) error {
+func (s authService) Logout(ctx *fiber.Ctx, request authDto.LogoutRequest) (int, error) {
 
 	token := ctx.Get("Authorization")
 	if token == "" && token[:7] != "Bearer " {
-		return fiber.NewError(fiber.StatusUnauthorized, "Missing authorization header")
+		return fiber.StatusUnauthorized, fiber.NewError(fiber.StatusUnauthorized, "Missing authorization header")
 	}
 	token = strings.TrimPrefix(token, "Bearer ")
 
 	client := s.authClient.WithToken(token)
 	user, err := client.GetUser()
 	if err != nil {
-		return err
+		return fiber.StatusInternalServerError, err
 	}
 
 	// Invalidate the access token
 	err = client.Logout()
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "An error occured during logout")
+		return fiber.StatusInternalServerError, fiber.NewError(fiber.StatusInternalServerError, "An error occured during logout")
 	}
 
 	refreshToken := ctx.Cookies("refresh_token")
 	if refreshToken != "" {
 		// Revoke the refresh token in the database
-		err = s.userTokenDao.RevokeToken(refreshToken)
-		if err != nil && err != gorm.ErrRecordNotFound {
-			return fiber.NewError(fiber.StatusInternalServerError, "An error occured during logout")
+		token, err := s.userTokenDao.FindByRefreshToken(refreshToken)
+		if err != nil {
+			// if record not found, log and continue clearing cookie
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				log.Warnf("refresh token not found in DB for user %s: %v", user.ID.String(), err)
+			} else {
+				return fiber.StatusInternalServerError, fiber.NewError(fiber.StatusInternalServerError, "An error occured during logout")
+			}
+		} else {
+			err = s.userTokenDao.RevokeToken(token.RefreshToken)
+			if err != nil {
+				return fiber.StatusInternalServerError, fiber.NewError(fiber.StatusInternalServerError, "An error occured during logout")
+			}
 		}
 	}
 
@@ -255,18 +309,18 @@ func (s authService) Logout(ctx *fiber.Ctx, request authDto.LogoutRequest) error
 	})
 
 	log.Infof("user %s logged out successfully", user.ID.String())
-	return nil
+	return fiber.StatusOK, nil
 }
 
-func (s authService) ForgotPassword(ctx *fiber.Ctx, request authDto.ForgotPasswordRequest) error {
+func (s authService) ForgotPassword(ctx *fiber.Ctx, request authDto.ForgotPasswordRequest) (int, error) {
 	err := s.authClient.Recover(types.RecoverRequest{
 		Email: request.Email,
 	})
 	if err != nil {
 		log.Infof("password recovery initiation failed for email=%s: %v", request.Email, err)
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to initiate password recovery")
+		return fiber.StatusInternalServerError, fiber.NewError(fiber.StatusInternalServerError, "Failed to initiate password recovery")
 	}
 
 	log.Infof("password recovery initiated for email=%s", request.Email)
-	return nil
+	return fiber.StatusOK, nil
 }

@@ -25,9 +25,9 @@ func InitializeRoutes(app *fiber.App, client connection.Client, auth auth.Client
 
 	// Auth routes (no token required)
 	authGroup := app.Group("/auth")
-	authGroup.Post("/login", authHandler.LoginByEmail)
+	authGroup.Post("/login", authentication.LoginByEmailRequestValidator, authHandler.LoginByEmail)
 	authGroup.Post("/refresh", authHandler.RefreshToken)
-	authGroup.Post("/signup", authHandler.SignUp)
+	authGroup.Post("/signup", authentication.SignUpByEmailRequestValidator, authHandler.SignUp)
 	authGroup.Get("/validate", tokenMiddleware, authHandler.ValidateToken)
 
 	// Protected routes (require valid token)
