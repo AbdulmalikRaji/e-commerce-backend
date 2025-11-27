@@ -10,6 +10,7 @@ import (
 	"github.com/abdulmalikraji/e-commerce/db/dao/userTokenDao"
 	"github.com/abdulmalikraji/e-commerce/db/models"
 	"github.com/abdulmalikraji/e-commerce/dto/authDto"
+	"github.com/abdulmalikraji/e-commerce/utils/messages"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/google/uuid"
@@ -140,7 +141,7 @@ func (s authService) SignupByEmail(ctx *fiber.Ctx, request authDto.SignUpByEmail
 	// Store user in the database inside a transaction so DB changes are rolled back on error.
 	err = s.userDao.Transaction(func(tx *gorm.DB) error {
 		newUser := models.User{
-			AuthID:      userResp.ID,
+			ID:          userResp.ID,
 			Email:       request.Email,
 			FirstName:   request.Firstname,
 			LastName:    request.Lastname,
@@ -184,7 +185,6 @@ func (s authService) GetUser(ctx *fiber.Ctx, request authDto.GetUserRequest) (au
 	// Map to DTO
 	return authDto.GetUserResponse{
 		UserID:      user.ID.String(),
-		AuthID:      user.AuthID.String(),
 		Firstname:   user.FirstName,
 		Lastname:    user.LastName,
 		Email:       user.Email,
@@ -275,7 +275,7 @@ func (s authService) Logout(ctx *fiber.Ctx, request authDto.LogoutRequest) (int,
 	// Invalidate the access token
 	err = client.Logout()
 	if err != nil {
-		return fiber.StatusInternalServerError, fiber.NewError(fiber.StatusInternalServerError, "An error occured during logout")
+		return fiber.StatusInternalServerError, fiber.NewError(fiber.StatusInternalServerError, messages.Templates[messages.LogoutError])
 	}
 
 	refreshToken := ctx.Cookies("refresh_token")
@@ -287,12 +287,12 @@ func (s authService) Logout(ctx *fiber.Ctx, request authDto.LogoutRequest) (int,
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				log.Warnf("refresh token not found in DB for user %s: %v", user.ID.String(), err)
 			} else {
-				return fiber.StatusInternalServerError, fiber.NewError(fiber.StatusInternalServerError, "An error occured during logout")
+				return fiber.StatusInternalServerError, fiber.NewError(fiber.StatusInternalServerError, messages.Templates[messages.LogoutError])
 			}
 		} else {
 			err = s.userTokenDao.RevokeToken(token.RefreshToken)
 			if err != nil {
-				return fiber.StatusInternalServerError, fiber.NewError(fiber.StatusInternalServerError, "An error occured during logout")
+				return fiber.StatusInternalServerError, fiber.NewError(fiber.StatusInternalServerError, messages.Templates[messages.LogoutError])
 			}
 		}
 	}
