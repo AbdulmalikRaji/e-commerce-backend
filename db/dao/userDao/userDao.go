@@ -10,7 +10,7 @@ type DataAccess interface {
 	// Postgres Data Access Object Methods
 	FindAll() ([]models.User, error)
 	FindById(id string) (models.User, error)
-	FindByName(name string) (models.User, error)
+	FindByEmail(email string) (models.User, error)
 	FindUserOrders(id string) (models.User, error)
 	FindUserReviews(id string) (models.User, error)
 	FindUserAddresses(id string) (models.User, error)
@@ -37,6 +37,12 @@ func New(client connection.Client) DataAccess {
 	}
 }
 
+// Transaction executes fn inside a gorm transaction using the DAO's DB connection.
+func (d dataAccess) Transaction(fn func(tx *gorm.DB) error) error {
+	return d.db.Transaction(fn)
+}
+
+
 func (d dataAccess) FindAll() ([]models.User, error) {
 
 	var users []models.User
@@ -61,11 +67,11 @@ func (d dataAccess) FindById(id string) (models.User, error) {
 	return user, nil
 }
 
-func (d dataAccess) FindByName(name string) (models.User, error) {
+func (d dataAccess) FindByEmail(email string) (models.User, error) {
 
 	var user models.User
 	result := d.db.Table(models.User{}.TableName()).
-		Where("name = ? AND del_flg = ?", name, false).
+		Where("email = ? AND del_flg = ?", email, false).
 		First(&user)
 	if result.Error != nil {
 		return models.User{}, result.Error
@@ -207,7 +213,3 @@ func (d dataAccess) Delete(id string) error {
 	return nil
 }
 
-// Transaction executes fn inside a gorm transaction using the DAO's DB connection.
-func (d dataAccess) Transaction(fn func(tx *gorm.DB) error) error {
-	return d.db.Transaction(fn)
-}

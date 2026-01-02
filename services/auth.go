@@ -106,7 +106,7 @@ func (s authService) SignupByEmail(ctx *fiber.Ctx, request authDto.SignUpByEmail
 		return fiber.StatusConflict, fiber.NewError(fiber.StatusConflict, "Email or phone number already exists")
 	}
 
-	// Create user in Auth0
+	// Create user in Auth service
 	userResp, err := s.authClient.Signup(types.SignupRequest{
 		Email:    request.Email,
 		Password: request.Password,
@@ -126,6 +126,7 @@ func (s authService) SignupByEmail(ctx *fiber.Ctx, request authDto.SignUpByEmail
 	resp, err := s.authClient.WithToken(os.Getenv("SERVICE_ROLE_KEY")).AdminUpdateUser(types.AdminUpdateUserRequest{
 		UserID: userResp.ID,
 		Phone:  request.PhoneNumber,
+		Role: request.Role,
 	})
 	if err != nil || resp.ID == uuid.Nil {
 		// Attempt best-effort cleanup: delete the auth provider user we just created
