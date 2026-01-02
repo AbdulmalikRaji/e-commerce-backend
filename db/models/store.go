@@ -11,6 +11,7 @@ type Store struct {
 	Name        string    `gorm:"type:varchar(100);not null;unique" json:"name"`
 	Description string    `gorm:"type:text" json:"description"`
 	OwnerID     uuid.UUID `gorm:"type:uuid;index;not null" json:"owner_id"` // FK to User
+	Settings    string    `gorm:"type:jsonb" json:"settings"`
 	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 	DelFlg      bool      `gorm:"default:false" json:"del_flg"`
