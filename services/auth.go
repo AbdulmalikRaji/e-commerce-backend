@@ -92,6 +92,7 @@ func (s authService) LoginByEmail(ctx *fiber.Ctx, request authDto.LoginByEmailRe
 
 	// Set the Authorization header
 	ctx.Set("Authorization", "Bearer "+resp.AccessToken)
+	ctx.Set("X-User-ID", resp.User.ID.String())
 
 	// Return data for client storage (localStorage)
 	return authDto.LoginByEmailResponse{
@@ -126,7 +127,7 @@ func (s authService) SignupByEmail(ctx *fiber.Ctx, request authDto.SignUpByEmail
 	resp, err := s.authClient.WithToken(os.Getenv("SERVICE_ROLE_KEY")).AdminUpdateUser(types.AdminUpdateUserRequest{
 		UserID: userResp.ID,
 		Phone:  request.PhoneNumber,
-		Role: request.Role,
+		Role:   request.Role,
 	})
 	if err != nil || resp.ID == uuid.Nil {
 		// Attempt best-effort cleanup: delete the auth provider user we just created
@@ -297,6 +298,10 @@ func (s authService) Logout(ctx *fiber.Ctx, request authDto.LogoutRequest) (int,
 			}
 		}
 	}
+
+	//clear the access token header and ID header
+	ctx.Set("Authorization", "")
+	ctx.Set("X-User-ID", "")
 
 	// Clear the refresh token cookie
 	ctx.Cookie(&fiber.Cookie{
