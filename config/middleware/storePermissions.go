@@ -13,20 +13,10 @@ import (
 // permission on the store identified by route param `store_id`.
 //
 // Example usage: dao := storeUserDao.New(connClient); app.Use("/stores/:store_id/orders", StorePermissionMiddleware(dao, storeUserDao.ActionManageOrders))
+// StorePermissionMiddleware checks whether the requesting user (whose ID
+// must already be set into the request context with `c.Locals("user_id")`)
+// has the given action permission on the store identified by route param `store_id`.
 func StorePermissionMiddleware(dao storeUserDao.DataAccess, action string) fiber.Handler {
-	return StorePermissionMiddlewareWithUserExtractor(dao, func(c *fiber.Ctx) (uuid.UUID, error) {
-		// default extractor: X-User-ID header
-		uid := c.Get("X-User-ID")
-		if uid == "" {
-			return uuid.Nil, fiber.ErrUnauthorized
-		}
-		return uuid.Parse(uid)
-	}, action)
-}
-
-// StorePermissionMiddlewareWithUserExtractor is like StorePermissionMiddleware
-// but allows a custom function to extract the user ID from the request (e.g. from auth client).
-func StorePermissionMiddlewareWithUserExtractor(dao storeUserDao.DataAccess, getUserID func(*fiber.Ctx) (uuid.UUID, error), action string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// get store id from common param names
 		storeParam := c.Params("store_id")
@@ -39,8 +29,13 @@ func StorePermissionMiddlewareWithUserExtractor(dao storeUserDao.DataAccess, get
 			return genericResponse.ErrorResponse(c, fiber.StatusBadRequest, "invalid store id format")
 		}
 
-		userID, err := getUserID(c)
-		if err != nil || userID == uuid.Nil {
+		// Read the user id header set during login: `X-User-ID`.
+		uid := c.Get("X-User-ID")
+		if uid == "" {
+			return genericResponse.ErrorResponse(c, fiber.StatusUnauthorized, messages.CreateMsg(c, messages.Unauthorized))
+		}
+		userID, err := uuid.Parse(uid)
+		if err != nil {
 			return genericResponse.ErrorResponse(c, fiber.StatusUnauthorized, messages.CreateMsg(c, messages.Unauthorized))
 		}
 
