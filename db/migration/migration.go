@@ -57,6 +57,7 @@ func Migrate(connection *gorm.DB) {
 			&models.AddToCartEvent{},
 			&models.SearchAnalytics{},
 			&models.StoreVisit{},
+			&models.StoreUser{},
 			&models.MarketingAnalytics{},
 			&models.SalesStat{},
 		); err != nil {

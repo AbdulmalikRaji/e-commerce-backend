@@ -13,6 +13,8 @@ import (
 
 type StoreService interface {
 	CreateStore(ctx *fiber.Ctx, request storeDto.CreateStoreRequest) (int, error)
+	GetStoreByID(ctx *fiber.Ctx, storeID string) (*models.Store, error)
+	FindStore(ctx *fiber.Ctx, name string) ([]models.Store, error)
 }
 
 type storeService struct {
@@ -57,4 +59,14 @@ func (s storeService) CreateStore(ctx *fiber.Ctx, request storeDto.CreateStoreRe
 	}
 
 	return fiber.StatusOK, nil
+}
+
+//todo: implement get store by id
+func (s storeService) GetStoreByID(ctx *fiber.Ctx, storeID string) (*models.Store, error) {
+	return nil, nil
+}
+
+//todo: implement find store
+func (s storeService) FindStore(ctx *fiber.Ctx, name string) ([]models.Store, error) {
+	return nil, nil
 }
