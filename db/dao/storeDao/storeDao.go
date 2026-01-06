@@ -10,6 +10,7 @@ type DataAccess interface {
 	FindAll() ([]models.Store, error)
 	FindById(id string) (models.Store, error)
 	FindByOwnerId(ownerId string) ([]models.Store, error)
+	FindByName(name string) ([]models.Store, error)
 	FindStoreProducts(storeId string) ([]models.Product, error)
 	Insert(item models.Store) (models.Store, error)
 	Update(item models.Store) error
@@ -63,6 +64,19 @@ func (d dataAccess) FindByOwnerId(ownerId string) ([]models.Store, error) {
 	if result.Error != nil {
 		return []models.Store{}, result.Error
 	}
+	return stores, nil
+}
+
+func (d dataAccess) FindByName(name string) ([]models.Store, error) {
+	var stores []models.Store
+	result := d.db.Table(models.Store{}.TableName()).
+		Where("name ILIKE ? AND del_flg = ?", "%"+name+"%", false).
+		Preload("Owner").
+		Preload("Products").
+		Find(&stores)
+	if result.Error != nil {
+		return []models.Store{}, result.Error
+	}	
 	return stores, nil
 }
 

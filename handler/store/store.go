@@ -7,6 +7,7 @@ import (
 
 type StoreHandler interface {
 	CreateStore(ctx *fiber.Ctx) error
+	GetStoreByID(ctx *fiber.Ctx) error
 }
 
 type storeHandler struct {
@@ -20,5 +21,9 @@ func New(service services.StoreService) StoreHandler {
 }
 
 func (c storeHandler) CreateStore(ctx *fiber.Ctx) error {
+	return nil
+}
+
+func (c storeHandler) GetStoreByID(ctx *fiber.Ctx) error {
 	return nil
 }

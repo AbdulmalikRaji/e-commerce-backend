@@ -13,6 +13,8 @@ type Store struct {
 	OwnerID     uuid.UUID `gorm:"type:uuid;index;not null" json:"owner_id"` // FK to User
 	Settings    string    `gorm:"type:jsonb" json:"settings"`
 	Image       *string   `gorm:"type:text" json:"image,omitempty"`
+	Rating      *float64  `gorm:"type:numeric(2,1);default:0" json:"rating,omitempty"`
+	ReviewCount int       `gorm:"type:int;default:0" json:"review_count"`
 	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 	DelFlg      bool      `gorm:"default:false" json:"del_flg"`

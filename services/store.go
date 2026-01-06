@@ -13,8 +13,8 @@ import (
 
 type StoreService interface {
 	CreateStore(ctx *fiber.Ctx, request storeDto.CreateStoreRequest) (int, error)
-	GetStoreByID(ctx *fiber.Ctx, storeID string) (*models.Store, error)
-	FindStore(ctx *fiber.Ctx, name string) ([]models.Store, error)
+	GetStoreByID(ctx *fiber.Ctx, request storeDto.GetStoreByIDRequest) (storeDto.GetStoreByIDResponse, int, error)
+	FindStore(ctx *fiber.Ctx, request storeDto.FindStoreRequest) (storeDto.FindStoreResponse, int, error)
 }
 
 type storeService struct {
@@ -61,12 +61,49 @@ func (s storeService) CreateStore(ctx *fiber.Ctx, request storeDto.CreateStoreRe
 	return fiber.StatusOK, nil
 }
 
-//todo: implement get store by id
-func (s storeService) GetStoreByID(ctx *fiber.Ctx, storeID string) (*models.Store, error) {
-	return nil, nil
+func (s storeService) GetStoreByID(ctx *fiber.Ctx, request storeDto.GetStoreByIDRequest) (storeDto.GetStoreByIDResponse, int, error) {
+	store, err := s.storeDao.FindById(request.StoreID)
+	if err != nil {
+		return storeDto.GetStoreByIDResponse{}, fiber.StatusInternalServerError, err
+	}
+
+	var storeImage string
+	if store.Image != nil {
+		storeImage = *store.Image
+	}
+
+	return storeDto.GetStoreByIDResponse{
+		ID:          store.ID.String(),
+		Name:        store.Name,
+		Description: store.Description,
+		OwnerID:     store.OwnerID.String(),
+		Image:       storeImage,
+		Settings:    store.Settings,
+	}, fiber.StatusOK, nil
 }
 
-//todo: implement find store
-func (s storeService) FindStore(ctx *fiber.Ctx, name string) ([]models.Store, error) {
-	return nil, nil
+func (s storeService) FindStore(ctx *fiber.Ctx, request storeDto.FindStoreRequest) (storeDto.FindStoreResponse, int, error) {
+	stores, err := s.storeDao.FindByName(request.Name)
+	if err != nil {
+		return storeDto.FindStoreResponse{}, fiber.StatusInternalServerError, err
+	}
+
+	var storeSummaries []storeDto.StoreSummary
+	for _, store := range stores {
+		var storeImage string
+		if store.Image != nil {
+			storeImage = *store.Image
+		}
+		storeSummaries = append(storeSummaries, storeDto.StoreSummary{
+			ID:          store.ID.String(),
+			Name:        store.Name,
+			Image:       storeImage,
+			Description: store.Description,
+			OwnerID:     store.OwnerID.String(),
+		})
+	}
+
+	return storeDto.FindStoreResponse{
+		Stores: storeSummaries,
+	}, fiber.StatusOK, nil
 }
