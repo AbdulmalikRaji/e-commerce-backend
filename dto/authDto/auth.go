@@ -46,11 +46,11 @@ type ForgotPasswordRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }
 
-type ResetPasswordRequest struct {
-	ResetToken      string `json:"reset_token" validate:"required"`
-	NewPassword     string `json:"new_password" validate:"required,min=8"`
-	ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=NewPassword"`
-}
+// type ResetPasswordRequest struct {
+// 	ResetToken      string `json:"reset_token" validate:"required"`
+// 	NewPassword     string `json:"new_password" validate:"required,min=8"`
+// 	ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=NewPassword"`
+// }
 
 type ForgotPasswordResponse struct {
 	Message string `json:"message"`
@@ -69,4 +69,11 @@ type GetUserResponse struct {
 	PhoneNumber    string      `json:"phone_number"`
 	Role           string      `json:"role"`
 	DefaultAddress UserAddress `json:"default_address"`
+}
+
+type ResetPasswordRequest struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	Password     string `json:"password"`
+	Type         string `json:"type"` // "recovery" 
 }

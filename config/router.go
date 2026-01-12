@@ -29,6 +29,7 @@ func InitializeRoutes(app *fiber.App, client connection.Client, auth auth.Client
 	authGroup.Post("/refresh", authHandler.RefreshToken)
 	authGroup.Post("/signup", authentication.SignUpByEmailRequestValidator, authHandler.SignUp)
 	authGroup.Get("/validate", tokenMiddleware, authHandler.ValidateToken)
+	authGroup.Post("/forgot-password", authHandler.ForgotPassword)
 
 	// Protected routes (require valid token)
 	app.Use(tokenMiddleware) // Apply to all routes after this point

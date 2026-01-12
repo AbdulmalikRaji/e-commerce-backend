@@ -35,6 +35,7 @@ type AuthService interface {
 	RefreshToken(ctx *fiber.Ctx) (authDto.RefreshTokenResponse, int, error)
 	Logout(ctx *fiber.Ctx, request authDto.LogoutRequest) (int, error)
 	ForgotPassword(ctx *fiber.Ctx, request authDto.ForgotPasswordRequest) (int, error)
+	ResetPassword(ctx *fiber.Ctx, request authDto.ResetPasswordRequest) (int, error)
 }
 
 type authService struct {
@@ -328,5 +329,47 @@ func (s authService) ForgotPassword(ctx *fiber.Ctx, request authDto.ForgotPasswo
 	}
 
 	log.Infof("password recovery initiated for email=%s", request.Email)
+	return fiber.StatusOK, nil
+}
+
+func (s authService) ResetPassword(ctx *fiber.Ctx, request authDto.ResetPasswordRequest) (int, error) {
+
+	// Validate access token and get user
+	client := s.authClient.WithToken(request.AccessToken)
+	user, err := client.GetUser()
+	if err != nil {
+		return fiber.StatusUnauthorized, fiber.NewError(fiber.StatusUnauthorized, "Invalid session")
+	}
+
+	// Update password
+	_, err = client.UpdateUser(types.UpdateUserRequest{
+		Password: &request.Password,
+	})
+	if err != nil {
+		return fiber.StatusUnauthorized, fiber.NewError(fiber.StatusUnauthorized, "Invalid session")
+	}
+
+	log.Infof("password reset successful for user with access token")
+
+	//update the refresh token cookie
+	// Set refresh token in HTTP-only cookie
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    request.RefreshToken,
+		Path:     "/",
+		Expires:  refreshExpiry,
+		Secure:   true,
+		HTTPOnly: true,
+		SameSite: "Strict",
+	})
+
+	// Store the user token in the database
+	_, err = s.userTokenDao.Insert(models.UserToken{
+		UserID:       user.ID,
+		RefreshToken: request.RefreshToken,
+		IsRevoked:    false,
+		ExpiresAt:    refreshExpiry,
+	})
+
 	return fiber.StatusOK, nil
 }

@@ -13,6 +13,7 @@ type AuthHandler interface {
 	ValidateToken(ctx *fiber.Ctx) error
 	RefreshToken(ctx *fiber.Ctx) error
 	Logout(ctx *fiber.Ctx) error
+	ForgotPassword(ctx *fiber.Ctx) error
 }
 
 type authHandler struct {
@@ -94,7 +95,7 @@ func (c authHandler) Logout(ctx *fiber.Ctx) error {
 
 	logoutRequest.AccessToken = token
 
-	status, err := c.service.Logout(ctx, logoutRequest) 
+	status, err := c.service.Logout(ctx, logoutRequest)
 	if err != nil {
 		return genericResponse.ErrorResponse(ctx, status, err.Error())
 	}
@@ -107,9 +108,95 @@ func (c authHandler) ForgotPassword(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(&forgotPasswordRequest); err != nil {
 		return genericResponse.ErrorResponse(ctx, fiber.StatusBadRequest, err.Error())
 	}
+
 	status, err := c.service.ForgotPassword(ctx, forgotPasswordRequest)
 	if err != nil {
 		return genericResponse.ErrorResponse(ctx, status, err.Error())
 	}
+
 	return genericResponse.SuccessResponse(ctx, status, nil, "Password recovery email sent")
+}
+
+func (c authHandler) ResetPassword(ctx *fiber.Ctx) error {
+	var req authDto.ResetPasswordRequest
+	if err := ctx.BodyParser(&req); err != nil {
+		return genericResponse.ErrorResponse(ctx, fiber.StatusBadRequest, err.Error())
+	}
+
+	if req.Type != "recovery" {
+		return genericResponse.ErrorResponse(ctx, fiber.StatusBadRequest, "Invalid reset type")
+	}
+
+	status, err := c.service.ResetPassword(ctx, req)
+	if err != nil {
+		return genericResponse.ErrorResponse(ctx, status, err.Error())
+	}
+
+	return genericResponse.SuccessResponse(ctx, status, nil, "Password reset successful")
+}
+
+func (c authHandler) ResetPasswordPage(ctx *fiber.Ctx) error {
+	html := `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Reset Password</title>
+</head>
+<body>
+  <h2>Reset Password</h2>
+
+  <form id="resetForm">
+    <input
+      type="password"
+      id="password"
+      placeholder="New password"
+      required
+    />
+    <br /><br />
+    <button type="submit">Reset Password</button>
+  </form>
+
+  <p id="status"></p>
+
+  <script>
+    const status = document.getElementById("status");
+
+    // Supabase puts tokens in the URL hash
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+
+    const accessToken = params.get("access_token");
+    const refreshToken = params.get("refresh_token");
+    const type = params.get("type");
+
+    if (!accessToken || type !== "recovery") {
+      status.innerText = "Invalid or missing recovery token.";
+      throw new Error("Invalid recovery token");
+    }
+
+    document.getElementById("resetForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const password = document.getElementById("password").value;
+
+      const res = await fetch("/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          password: password,
+		  type: type
+        })
+      });
+
+      const data = await res.json();
+      status.innerText = data.message || data.error;
+    });
+  </script>
+</body>
+</html>
+`
+	return ctx.Type("html").SendString(html)
 }
