@@ -1,6 +1,11 @@
 package genericResponse
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"encoding/json"
+	"strings"
+
+	"github.com/gofiber/fiber/v2"
+)
 
 type GenericResponse struct {
 	Success bool        `json:"success"`
@@ -32,9 +37,36 @@ func ErrorResponse(ctx *fiber.Ctx, status int, msg string, data ...interface{}) 
 		out = data
 	}
 
+	// Attempt to extract a JSON object from the error message string
+	trimmed := strings.TrimSpace(msg)
+	// Look for a JSON object inside the message (e.g. "response status code 400: {...}")
+	jsonStart := strings.Index(trimmed, "{")
+	jsonEnd := strings.LastIndex(trimmed, "}")
+	if jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart {
+		jsonStr := trimmed[jsonStart : jsonEnd+1]
+		var parsed map[string]interface{}
+		if err := json.Unmarshal([]byte(jsonStr), &parsed); err == nil {
+			// If caller didn't provide explicit data, expose the parsed JSON as Data
+			if len(data) == 0 {
+				out = parsed
+			}
+
+			// Prefer common message keys from parsed JSON to form a clean Message
+			if m, ok := parsed["msg"].(string); ok && m != "" {
+				trimmed = m
+			} else if m, ok := parsed["message"].(string); ok && m != "" {
+				trimmed = m
+			} else if m, ok := parsed["error"].(string); ok && m != "" {
+				trimmed = m
+			} else if m, ok := parsed["error_description"].(string); ok && m != "" {
+				trimmed = m
+			}
+		}
+	}
+
 	return ctx.Status(status).JSON(GenericResponse{
 		Success: false,
-		Message: msg,
+		Message: trimmed,
 		Data:    out,
 	})
 }

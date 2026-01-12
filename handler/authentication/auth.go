@@ -14,6 +14,8 @@ type AuthHandler interface {
 	RefreshToken(ctx *fiber.Ctx) error
 	Logout(ctx *fiber.Ctx) error
 	ForgotPassword(ctx *fiber.Ctx) error
+	ResetPassword(ctx *fiber.Ctx) error
+	ResetPasswordPage(ctx *fiber.Ctx) error
 }
 
 type authHandler struct {
