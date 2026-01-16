@@ -32,6 +32,8 @@ func Migrate(connection *gorm.DB) {
 		log.Println("Creating tables...")
 
 		if err := tx.AutoMigrate(
+			&models.Currency{},
+			&models.Language{},
 			&models.User{},
 			&models.Category{},
 			&models.Product{},

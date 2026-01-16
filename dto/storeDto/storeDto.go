@@ -8,8 +8,8 @@ type CreateStoreRequest struct {
 }
 
 type StoreSettings struct {
-	Currency       string `json:"currency"`
-	Language       string `json:"language"`
+	CurrencyID     string `json:"currency_id"`
+	LanguageID     string `json:"language_id"`
 	InventoryAlert bool   `json:"inventory_alert"`
 }
 
