@@ -43,3 +43,26 @@ type StoreSummary struct {
 	Rating      string `json:"rating,omitempty"`
 	OwnerID     string `json:"owner_id"`
 }
+
+type GetStoreProductsRequest struct {
+	StoreID string `json:"store_id"`
+}
+
+type GetStoreProductsResponse struct {
+	ID          string          `json:"id"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	OwnerID     string          `json:"owner_id"`
+	Image       string          `json:"image,omitempty"`
+	Rating      string          `json:"rating,omitempty"`
+	Products    []StoreProducts `json:"products"`
+}
+
+type StoreProducts struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price"`
+	Image       string  `json:"image,omitempty"`
+	Stock       int     `json:"stock"`
+}

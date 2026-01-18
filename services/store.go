@@ -15,6 +15,7 @@ type StoreService interface {
 	CreateStore(ctx *fiber.Ctx, request storeDto.CreateStoreRequest) (int, error)
 	GetStoreByID(ctx *fiber.Ctx, request storeDto.GetStoreByIDRequest) (storeDto.GetStoreByIDResponse, int, error)
 	FindStore(ctx *fiber.Ctx, request storeDto.FindStoreRequest) (storeDto.FindStoreResponse, int, error)
+	GetStoreProducts(ctx *fiber.Ctx, request storeDto.GetStoreProductsRequest) (storeDto.GetStoreProductsResponse, int, error)
 }
 
 type storeService struct {
@@ -105,5 +106,44 @@ func (s storeService) FindStore(ctx *fiber.Ctx, request storeDto.FindStoreReques
 
 	return storeDto.FindStoreResponse{
 		Stores: storeSummaries,
+	}, fiber.StatusOK, nil
+}
+
+func (s storeService) GetStoreProducts(ctx *fiber.Ctx, request storeDto.GetStoreProductsRequest) (storeDto.GetStoreProductsResponse, int, error) {
+	store, err := s.storeDao.FindStoreProducts(request.StoreID)
+	if err != nil {
+		return storeDto.GetStoreProductsResponse{}, fiber.StatusInternalServerError, err
+	}
+	var storeImage string
+	if store.Image != nil {
+		storeImage = *store.Image
+	}
+	var products []storeDto.StoreProducts
+	for _, product := range store.Products {
+		var productImage string
+		if product.Images != nil {
+			for _, img := range product.Images {
+				if img.IsPrimary {
+					productImage = img.ImageURL
+					break
+				}
+			}
+		}
+		products = append(products, storeDto.StoreProducts{
+			ID:          product.ID.String(),
+			Name:        product.Name,
+			Description: product.Description,
+			Price:       product.Price,
+			Image:       productImage,
+			Stock:       product.Stock,
+		})
+	}
+	return storeDto.GetStoreProductsResponse{
+		ID:          store.ID.String(),
+		Name:        store.Name,
+		Description: store.Description,
+		OwnerID:     store.OwnerID.String(),
+		Image:       storeImage,
+		Products:    products,
 	}, fiber.StatusOK, nil
 }
