@@ -9,7 +9,7 @@ import (
 type DataAccess interface {
 	FindAll() ([]models.Store, error)
 	FindById(id string) (models.Store, error)
-	FindByOwnerId(ownerId string) ([]models.Store, error)
+	FindByOwnerID(ownerId string) ([]models.Store, error)
 	FindByName(name string) ([]models.Store, error)
 	FindStoreProducts(storeId string) (models.Store, error)
 	Insert(item models.Store) (models.Store, error)
@@ -54,7 +54,8 @@ func (d dataAccess) FindById(id string) (models.Store, error) {
 	return store, nil
 }
 
-func (d dataAccess) FindByOwnerId(ownerId string) ([]models.Store, error) {
+func (d dataAccess) FindByOwnerID(ownerId string) ([]models.Store, error) {
+	//todo: figure if owner can have multiple stores
 	var stores []models.Store
 	result := d.db.Table(models.Store{}.TableName()).
 		Where("owner_id = ? AND del_flg = ?", ownerId, false).

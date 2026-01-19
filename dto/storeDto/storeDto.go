@@ -66,3 +66,17 @@ type StoreProducts struct {
 	Image       string  `json:"image,omitempty"`
 	Stock       int     `json:"stock"`
 }
+
+type GetStoreByOwnerIDRequest struct {
+	OwnerID string `json:"owner_id"`
+}
+
+type GetStoreByOwnerIDResponse struct {
+	ID          string          `json:"id"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	OwnerID     string          `json:"owner_id"`
+	Image       string          `json:"image,omitempty"`
+	Rating      string          `json:"rating,omitempty"`
+	Products    []StoreProducts `json:"products"`
+}
