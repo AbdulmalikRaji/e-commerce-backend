@@ -55,7 +55,6 @@ func (d dataAccess) FindById(id string) (models.Store, error) {
 }
 
 func (d dataAccess) FindByOwnerID(ownerId string) ([]models.Store, error) {
-	//todo: figure if owner can have multiple stores
 	var stores []models.Store
 	result := d.db.Table(models.Store{}.TableName()).
 		Where("owner_id = ? AND del_flg = ?", ownerId, false).

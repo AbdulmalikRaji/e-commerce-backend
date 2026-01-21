@@ -14,7 +14,7 @@ import (
 type StoreService interface {
 	CreateStore(ctx *fiber.Ctx, request storeDto.CreateStoreRequest) (int, error)
 	GetStoreByID(ctx *fiber.Ctx, request storeDto.GetStoreByIDRequest) (storeDto.GetStoreByIDResponse, int, error)
-	GetStoreByOwnerID(ctx *fiber.Ctx, request storeDto.GetStoreByOwnerIDRequest) (storeDto.GetStoreByOwnerIDResponse, int, error)
+	GetStoreByOwnerID(ctx *fiber.Ctx, request storeDto.GetStoreByOwnerIDRequest) ([]storeDto.GetStoreByOwnerIDResponse, int, error)
 	FindStore(ctx *fiber.Ctx, request storeDto.FindStoreRequest) (storeDto.FindStoreResponse, int, error)
 	GetStoreProducts(ctx *fiber.Ctx, request storeDto.GetStoreProductsRequest) (storeDto.GetStoreProductsResponse, int, error)
 }
@@ -149,20 +149,27 @@ func (s storeService) GetStoreProducts(ctx *fiber.Ctx, request storeDto.GetStore
 	}, fiber.StatusOK, nil
 }
 
-func (s storeService) GetStoreByOwnerID(ctx *fiber.Ctx, request storeDto.GetStoreByOwnerIDRequest) (storeDto.GetStoreByOwnerIDResponse, int, error) {
-	store, err := s.storeDao.FindByOwnerID(request.OwnerID)
+func (s storeService) GetStoreByOwnerID(ctx *fiber.Ctx, request storeDto.GetStoreByOwnerIDRequest) ([]storeDto.GetStoreByOwnerIDResponse, int, error) {
+	stores, err := s.storeDao.FindByOwnerID(request.OwnerID)
 	if err != nil {
-		return storeDto.GetStoreByOwnerIDResponse{}, fiber.StatusInternalServerError, err
+		return []storeDto.GetStoreByOwnerIDResponse{}, fiber.StatusInternalServerError, err
 	}
-	var storeImage string
-	if store[0].Image != nil {
-		storeImage = *store[0].Image
+
+	var response []storeDto.GetStoreByOwnerIDResponse
+
+	for _, store := range stores {
+		var storeImage string
+		if store.Image != nil {
+			storeImage = *store.Image
+		}
+		response = append(response, storeDto.GetStoreByOwnerIDResponse{
+			ID:          store.ID.String(),
+			Name:        store.Name,
+			Description: store.Description,
+			OwnerID:     store.OwnerID.String(),
+			Image:       storeImage,
+		})
 	}
-	return storeDto.GetStoreByOwnerIDResponse{
-		ID:          store[0].ID.String(),
-		Name:        store[0].Name,
-		Description: store[0].Description,
-		OwnerID:     store[0].OwnerID.String(),
-		Image:       storeImage,
-	}, fiber.StatusOK, nil
+
+	return response, fiber.StatusOK, nil
 }

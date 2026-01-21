@@ -10,6 +10,8 @@ import (
 type StoreHandler interface {
 	CreateStore(ctx *fiber.Ctx) error
 	GetStoreByID(ctx *fiber.Ctx) error
+	GetStoreProducts(ctx *fiber.Ctx) error
+	GetStoreByOwnerID(ctx *fiber.Ctx) error
 }
 
 type storeHandler struct {
@@ -49,4 +51,30 @@ func (c storeHandler) GetStoreByID(ctx *fiber.Ctx) error {
 	}
 
 	return genericResponse.SuccessResponse(ctx, statusCode, response, "Store retrieved successfully")
+}
+
+func (c storeHandler) GetStoreByOwnerID(ctx *fiber.Ctx) error {
+	var request storeDto.GetStoreByOwnerIDRequest
+	if err := ctx.QueryParser(&request); err != nil {
+		return err
+	}
+
+	response, statusCode, err := c.service.GetStoreByOwnerID(ctx, request)
+	if err != nil {
+		return genericResponse.ErrorResponse(ctx, fiber.StatusBadRequest, err.Error())
+	}
+
+	return genericResponse.SuccessResponse(ctx, statusCode, response, "Stores retrieved successfully")
+}
+
+func (c storeHandler) GetStoreProducts(ctx *fiber.Ctx) error {
+	var request storeDto.GetStoreProductsRequest
+	if err := ctx.QueryParser(&request); err != nil {
+		return err
+	}
+	response, statusCode, err := c.service.GetStoreProducts(ctx, request)
+	if err != nil {
+		return genericResponse.ErrorResponse(ctx, fiber.StatusBadRequest, err.Error())
+	}
+	return genericResponse.SuccessResponse(ctx, statusCode, response, "Store products retrieved successfully")
 }
