@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate mockgen -destination=../../../mocks/dao/storeDao/mockStoreDao.go -package=storeDao -source=storeDao.go
 type DataAccess interface {
 	FindAll() ([]models.Store, error)
 	FindById(id string) (models.Store, error)
