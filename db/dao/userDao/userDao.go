@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate mockgen -destination=../../../mocks/dao/userDao/mockUserDao.go -package=userDao -source=userDao.go
 type DataAccess interface {
 	// Postgres Data Access Object Methods
 	FindAll() ([]models.User, error)
